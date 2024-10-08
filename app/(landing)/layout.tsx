@@ -17,7 +17,7 @@ const LandingLayout = ({ children }: PropsWithChildren) => {
               <img
                 width="120"
                 height="600"
-                border="0"
+                style={{ border: "0" }} // 使用 inline 样式来代替 border 属性
                 src="https://ad.admitad.com/b/p173w2r5daf988fb0a8d4bf89f6ddb/"
                 alt="Tomtop WW"
               />
