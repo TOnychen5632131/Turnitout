@@ -1,4 +1,5 @@
 import { ClerkProvider } from "@clerk/nextjs";
+import Head from "next/head";  // 导入 Head 组件
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import type { PropsWithChildren } from "react";
@@ -27,6 +28,10 @@ export default function RootLayout({ children }: PropsWithChildren) {
       }}
     >
       <html lang="en">
+        <Head>
+          {/* 插入 Meta 验证标签 */}
+          <meta name="verify-admitad" content="f988fb0a8d" />
+        </Head>
         <CrispProvider />
         <body className={inter.className}>
           <ModalProvider />
