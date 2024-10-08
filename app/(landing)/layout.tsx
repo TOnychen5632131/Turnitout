@@ -20,8 +20,8 @@ const LandingLayout = ({ children }: PropsWithChildren) => {
               href="https://ficca2021.com/g/860kqzfyjgf988fb0a8d4bf89f6ddb/?i=4"
             >
               <Image
-                width={90}
-                height={728}
+                width={728}
+                height={90}
                 style={{ border: "0" }}
                 src="https://ad.admitad.com/b/860kqzfyjgf988fb0a8d4bf89f6ddb/"
                 alt="Tomtop WW"
