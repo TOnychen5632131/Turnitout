@@ -73,7 +73,7 @@ const ConversationPage = () => {
       />
 
       <div className="px-4 lg:px-8">
-        <div className="">
+        <div>
           <Form {...form}>
             <form
               onSubmit={form.handleSubmit(onSubmit)}
@@ -134,12 +134,20 @@ const ConversationPage = () => {
                   <p className="text-sm">{message.content}</p>
                   {/* 显示单词计数器 */}
                   <p className="text-xs text-gray-500">
-                    {`Word count: ${message.content ? message.content.split(/\s+/).filter(word => word.length > 0).length : 0}`}
+                    {`Word count: ${
+                      message.content
+                        ? message.content.split(/\s+/).filter(word => word.length > 0).length
+                        : 0
+                    }`}
                   </p>
                 </div>
               </div>
             ))}
           </div>
-
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export default ConversationPage;
