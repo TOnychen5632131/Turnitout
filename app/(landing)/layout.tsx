@@ -11,22 +11,24 @@ const LandingLayout = ({ children }: PropsWithChildren) => {
       </Head>
       <main className="h-full bg-[#111827] overflow-auto">
         <div className="mx-auto max-w-screen-xl h-full w-full">
-          {/* 插入本地广告图片 */}
+          {/* 插入广告代码 */}
           <div className="ad-banner">
+            {/* admitad.banner: p173w2r5daf988fb0a8d4bf89f6ddb Tomtop WW */}
             <a
               target="_blank"
               rel="nofollow"
-              href="https://ficca2021.com/g/860kqzfyjgf988fb0a8d4bf89f6ddb/?i=4"
+              href="https://ad.admitad.com/b/lmg9k1a40kf988fb0a8d4bf89f6ddb/"
             >
               <Image
-                width={728}
-                height={90}
+                width={120}
+                height={600}
                 style={{ border: "0" }}
-                src="/ad-banner.png"  {/* 使用本地图片路径 */}
+                src="https://ficca2021.com/g/lmg9k1a40kf988fb0a8d4bf89f6ddb/?i=4"
                 alt="Tomtop WW"
                 priority
               />
             </a>
+            {/* /admitad.banner */}
           </div>
 
           {/* 页面内容 */}
