@@ -132,19 +132,14 @@ const ConversationPage = () => {
                 {message.role === "user" ? <UserAvatar /> : <BotAvatar />}
                 <div>
                   <p className="text-sm">{message.content}</p>
-                  {/* 显示字符计数器 */}
+                  {/* 显示单词计数器 */}
                   <p className="text-xs text-gray-500">
-                    {`Character count: ${message.content?.length ?? 0}`}
+                    {`Word count: ${message.content ? message.content.split(/\s+/).filter(word => word.length > 0).length : 0}`}
                   </p>
-
                 </div>
               </div>
             ))}
           </div>
-        </div>
-      </div>
-    </div>
-  );
-};
+
 
 export default ConversationPage;
