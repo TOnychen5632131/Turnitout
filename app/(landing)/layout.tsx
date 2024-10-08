@@ -17,13 +17,13 @@ const LandingLayout = ({ children }: PropsWithChildren) => {
             <a
               target="_blank"
               rel="nofollow"
-              href="https://ad.admitad.com/b/lmg9k1a40kf988fb0a8d4bf89f6ddb/"
+              href="https://ficca2021.com/g/860kqzfyjgf988fb0a8d4bf89f6ddb/?i=4"
             >
               <Image
                 width={120}
                 height={600}
                 style={{ border: "0" }}
-                src="https://ficca2021.com/g/lmg9k1a40kf988fb0a8d4bf89f6ddb/?i=4"
+                src="/ad-banner.png"
                 alt="Tomtop WW"
                 priority
               />
