@@ -12,7 +12,7 @@ import {
   VideoIcon,
 } from "lucide-react";
 
-export const MAX_FREE_COUNTS = 5 as const;
+export const MAX_FREE_COUNTS = 100 as const;
 
 export const TESTIMONIALS = [
   {
