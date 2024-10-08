@@ -17,11 +17,11 @@ const LandingLayout = ({ children }: PropsWithChildren) => {
             <a
               target="_blank"
               rel="nofollow"
-              href="https://ficca2021.com/g/p173w2r5daf988fb0a8d4bf89f6ddb/?i=4"
+              href="https://ficca2021.com/g/860kqzfyjgf988fb0a8d4bf89f6ddb/?i=4"
             >
               <Image
-                width={120}
-                height={600}
+                width={728}
+                height={90}
                 style={{ border: "0" }}
                 src="https://cdn.admitad-connect.com/public/bs/2023/11/03/728x90.1fa9.gif"
                 alt="Tomtop WW"
