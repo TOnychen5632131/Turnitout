@@ -134,8 +134,9 @@ const ConversationPage = () => {
                   <p className="text-sm">{message.content}</p>
                   {/* 显示字符计数器 */}
                   <p className="text-xs text-gray-500">
-                    {`Character count: ${message.content.length}`}
+                    {`Character count: ${message.content?.length ?? 0}`}
                   </p>
+
                 </div>
               </div>
             ))}
