@@ -11,9 +11,8 @@ const LandingLayout = ({ children }: PropsWithChildren) => {
       </Head>
       <main className="h-full bg-[#111827] overflow-auto">
         <div className="mx-auto max-w-screen-xl h-full w-full">
-          {/* 插入广告代码 */}
+          {/* 插入本地广告图片 */}
           <div className="ad-banner">
-            {/* admitad.banner: p173w2r5daf988fb0a8d4bf89f6ddb Tomtop WW */}
             <a
               target="_blank"
               rel="nofollow"
@@ -23,12 +22,11 @@ const LandingLayout = ({ children }: PropsWithChildren) => {
                 width={728}
                 height={90}
                 style={{ border: "0" }}
-                src="https://cdn.admitad-connect.com/public/bs/2023/11/03/728x90.1fa9.gif"
+                src="/ad-banner.png"  {/* 使用本地图片路径 */}
                 alt="Tomtop WW"
                 priority
               />
             </a>
-            {/* /admitad.banner */}
           </div>
 
           {/* 页面内容 */}
