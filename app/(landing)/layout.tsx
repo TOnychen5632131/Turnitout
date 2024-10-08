@@ -13,7 +13,7 @@ const LandingLayout = ({ children }: PropsWithChildren) => {
           {/* 插入广告代码 */}
           <div className="ad-banner">
             {/* admitad.banner: p173w2r5daf988fb0a8d4bf89f6ddb Tomtop WW */}
-            <a target="_blank" rel="nofollow" href="https://ficca2021.com/g/p173w2r5daf988fb0a8d4bf89f6ddb/?i=4">
+            <a target="_blank" rel="nofollow" href="https://ficca2021.com/g/xljorca896f988fb0a8d4bf89f6ddb/">
               <img
                 width="120"
                 height="600"
