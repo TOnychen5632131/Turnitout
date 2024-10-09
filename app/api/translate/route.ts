@@ -21,40 +21,40 @@ export async function POST(req: NextRequest) {
       return new NextResponse("OpenAI API key not configured.", { status: 500 });
 
     const body = await req.json();
-    const { messages } = body; // 从请求体中获取消息
+    const { englishMessage } = body; // 从请求体中获取需要翻译的英文消息
 
-    if (!messages || messages.length === 0)
-      return new NextResponse("Messages are required.", { status: 400 });
+    if (!englishMessage)
+      return new NextResponse("English message is required.", { status: 400 });
 
     const freeTrial = await checkApiLimit();
     const isPro = await checkSubscription();
     if (!freeTrial && !isPro)
       return new NextResponse("Free trial has expired.", { status: 403 });
 
-    // 添加一个 'system' 消息
-    messages.unshift({
-      role: ChatCompletionRequestMessageRoleEnum.System,
-      content: "请回答并在最后加上 'yes'。",
-    });
+    // 准备翻译请求
+    const translationMessages = [
+      { role: ChatCompletionRequestMessageRoleEnum.System, content: "你是一个翻译助手，请将以下英文内容翻译成中文。" },
+      { role: ChatCompletionRequestMessageRoleEnum.User, content: englishMessage }, // 将英文内容发送给翻译请求
+    ];
 
-    // 调用 OpenAI 生成对话内容
-    const conversationResponse = await openai.createChatCompletion({
+    // 调用 OpenAI 进行翻译
+    const translationResponse = await openai.createChatCompletion({
       model: "gpt-4",
-      messages,
+      messages: translationMessages,
     });
 
-    const englishMessage = conversationResponse?.data?.choices?.[0]?.message?.content;
-    if (!englishMessage) {
-      return new NextResponse("Failed to generate conversation.", { status: 500 });
+    const translatedMessage = translationResponse?.data?.choices?.[0]?.message?.content;
+    if (!translatedMessage) {
+      return new NextResponse("Failed to translate content.", { status: 500 });
     }
 
     if (!isPro) await increaseApiLimit();
 
-    // 返回生成的英文对话
-    return NextResponse.json({ english: englishMessage }, { status: 200 });
+    // 返回翻译后的中文内容
+    return NextResponse.json({ chinese: translatedMessage }, { status: 200 });
 
   } catch (error: unknown) {
-    console.error("[CONVERSATION_ERROR]: ", error);
+    console.error("[TRANSLATION_ERROR]: ", error);
     return new NextResponse("Internal server error.", { status: 500 });
   }
 }
