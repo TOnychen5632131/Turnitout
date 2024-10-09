@@ -22,10 +22,15 @@ import { useProModal } from "@/hooks/use-pro-modal";
 import { cn } from "@/lib/utils";
 import { conversationFormSchema } from "@/schemas";
 
+// 扩展 ChatCompletionRequestMessage 类型，增加 isTranslation 属性
+interface ExtendedChatCompletionRequestMessage extends ChatCompletionRequestMessage {
+  isTranslation?: boolean;
+}
+
 const ConversationPage = () => {
   const proModal = useProModal();
   const router = useRouter();
-  const [messages, setMessages] = useState<ChatCompletionRequestMessage[]>([]);
+  const [messages, setMessages] = useState<ExtendedChatCompletionRequestMessage[]>([]);
 
   const form = useForm<z.infer<typeof conversationFormSchema>>({
     resolver: zodResolver(conversationFormSchema),
@@ -38,7 +43,7 @@ const ConversationPage = () => {
 
   const onSubmit = async (values: z.infer<typeof conversationFormSchema>) => {
     try {
-      const userMessage: ChatCompletionRequestMessage = {
+      const userMessage: ExtendedChatCompletionRequestMessage = {
         role: "user",
         content: values.prompt,
       };
