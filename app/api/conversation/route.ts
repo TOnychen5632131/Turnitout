@@ -26,7 +26,7 @@ const ConversationPage = () => {
   const proModal = useProModal();
   const router = useRouter();
   const [messages, setMessages] = useState<ChatCompletionRequestMessage[]>([]);
-  const [translations, setTranslations] = useState<{ [key: number]: string }>({}); // 存储每个消息的翻译
+  const [translations, setTranslations] = useState<{ [key: number]: string }>({}); // 用于存储翻译的结果
 
   const form = useForm<z.infer<typeof conversationFormSchema>>({
     resolver: zodResolver(conversationFormSchema),
@@ -46,29 +46,30 @@ const ConversationPage = () => {
 
       const newMessages = [...messages, userMessage];
 
-      // 调用现有的去 AI 化 API 生成英文改写后的内容
       const response = await axios.post("/api/conversation", {
         messages: newMessages,
       });
 
-      setMessages((current) => [...current, userMessage, response.data]);
-
-      // 针对生成的英文改写后的内容，调用翻译 API 获取中文翻译
-      const translationResponse = await axios.post("/api/translate", {
-        text: response.data.content, // 翻译生成的英文内容
+      const aiGeneratedMessage = response.data;
+      
+      // 新增：进行翻译的 API 调用
+      const translationResponse = await axios.post("/api/conversation", {
+        messages: [{ role: "system", content: "Translate the following text to Chinese." }, { role: "user", content: aiGeneratedMessage.content }]
       });
 
-      // 将翻译结果存储到 translations 中
-      setTranslations((prev) => ({
-        ...prev,
-        [newMessages.length]: translationResponse.data.translatedText,
-      }));
-    } catch (error: any) {
-      if (axios.isAxiosError(error) && error?.response?.status === 403)
-        proModal.onOpen();
-      else toast.error("Something went wrong.");
+      const translatedText = translationResponse.data.content;
 
-      console.error(error);
+      // 更新 GPT 生成的内容和翻译
+      setMessages((current) => [...current, userMessage, aiGeneratedMessage]);
+      setTranslations((current) => ({ ...current, [newMessages.length]: translatedText }));
+      
+    } catch (error: any) {
+      if (axios.isAxiosError(error) && error?.response?.status === 403) {
+        proModal.onOpen();
+      } else {
+        toast.error("Something went wrong.");
+        console.error(error);
+      }
     } finally {
       form.reset();
       router.refresh();
@@ -103,7 +104,7 @@ const ConversationPage = () => {
                         className="border-0 outline-none focus-visible:ring-0 focus-visible:ring-transparent"
                         disabled={isLoading}
                         aria-disabled={isLoading}
-                        placeholder="Enter text to rewrite"
+                        placeholder="Enter your prompt here"
                         {...field}
                       />
                     </FormControl>
@@ -131,33 +132,30 @@ const ConversationPage = () => {
           {messages.length === 0 && !isLoading && (
             <Empty label="No conversation started." />
           )}
-
           <div className="flex flex-col-reverse gap-y-4">
             {messages.map((message, i) => (
-              <div key={`${i}-${message.content}`} className="flex gap-x-4">
-                {/* 左侧显示英文改写的内容 */}
-                <div className="w-1/2 p-8 w-full flex items-start gap-x-8 rounded-lg bg-white border border-black/10">
-                  {message.role === "user" ? <UserAvatar /> : <BotAvatar />}
+              <div
+                key={`${i}-${message.content}`}
+                className={cn(
+                  "p-8 w-full flex items-start gap-x-8 rounded-lg",
+                  message.role === "user"
+                    ? "bg-white border border-black/10"
+                    : "bg-muted",
+                )}
+              >
+                {message.role === "user" ? <UserAvatar /> : <BotAvatar />}
+                <div className="grid grid-cols-2 gap-4 w-full">
+                  {/* 左侧显示 GPT 生成的英文内容 */}
                   <div>
                     <p className="text-sm">{message.content}</p>
-                    {/* 显示英文消息的单词计数器 */}
-                    <p className="text-xs text-gray-500">
-                      {`Word count: ${
-                        message.content
-                          ? message.content
-                              .split(/\s+/)
-                              .filter(word => word.trim().length > 0).length
-                          : 0
-                      }`}
-                    </p>
                   </div>
-                </div>
 
-                {/* 右侧显示中文翻译 */}
-                <div className="w-1/2 p-8 w-full flex items-start gap-x-8 rounded-lg bg-muted">
-                  <p className="text-sm">
-                    {translations[i] || "Translating..."} {/* 翻译结果 */}
-                  </p>
+                  {/* 右侧显示翻译的中文内容 */}
+                  {translations[i] && (
+                    <div>
+                      <p className="text-sm text-gray-500">翻译：{translations[i]}</p>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
