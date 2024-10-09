@@ -21,14 +21,13 @@ import { Input } from "@/components/ui/input";
 import { useProModal } from "@/hooks/use-pro-modal";
 import { cn } from "@/lib/utils";
 import { codeFormSchema } from "@/schemas";
-import type { ChatCompletionRequestMessage } from "openai"; // 确保正确导入类型
+import type { ChatCompletionRequestMessage } from "openai";
 
 const CodePage = () => {
   const proModal = useProModal();
   const router = useRouter();
-  
-  // 修改 useState 的类型为 ChatCompletionRequestMessage[]
   const [messages, setMessages] = useState<ChatCompletionRequestMessage[]>([]);
+  const [aiDetectionResult, setAiDetectionResult] = useState([]); // 用于保存检测结果
 
   const form = useForm<z.infer<typeof codeFormSchema>>({
     resolver: zodResolver(codeFormSchema),
@@ -53,12 +52,23 @@ const CodePage = () => {
         text: values.prompt, // 将输入的文本发送到后端
       });
 
-      // 更新消息状态，包含用户输入和后端返回的内容
+      const result = response.data;
+
+      // 提取重要的检测字段
+      const processedResult = result.sentences.map((sentence: any) => ({
+        sentence: sentence.sentence,
+        probability: sentence.generated_prob,
+        isAi: sentence.highlight_sentence_for_ai ? "AI-Generated" : "Human",
+      }));
+
+      // 更新消息状态，显示原文和检测结果
       setMessages((current) => [
         ...current,
         userMessage, // 用户输入的消息
-        { role: "assistant", content: response.data.result }, // 后端返回的检测结果
       ]);
+
+      // 设置检测结果
+      setAiDetectionResult(processedResult);
     } catch (error: unknown) {
       if (axios.isAxiosError(error) && error?.response?.status === 403) {
         proModal.onOpen();
@@ -163,6 +173,29 @@ const CodePage = () => {
               </div>
             ))}
           </div>
+
+          {/* 在页面显示 AI 检测结果 */}
+          {aiDetectionResult.length > 0 && (
+            <div className="mt-6">
+              <h2 className="text-lg font-bold">AI Detection Results</h2>
+              {aiDetectionResult.map((result, index) => (
+                <div
+                  key={index}
+                  className="p-4 mt-2 border rounded-lg bg-gray-50"
+                >
+                  <p>
+                    <strong>Sentence:</strong> {result.sentence}
+                  </p>
+                  <p>
+                    <strong>Generated Probability:</strong> {result.probability.toFixed(4)}
+                  </p>
+                  <p>
+                    <strong>Classification:</strong> {result.isAi}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
