@@ -119,7 +119,7 @@ const CodePage = () => {
   return (
     <div>
       <Heading
-        title="Code Generation"
+        title="Code 11111"
         description="Generate code using descriptive text."
         icon={Code}
         iconColor="text-green-700"
