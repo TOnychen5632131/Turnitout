@@ -57,8 +57,8 @@ const ConversationPage = () => {
       setMessages((current) => [
         ...current,
         userMessage, // 用户输入
-        { role: "bot", content: originalMessage }, // GPT 生成的原始内容
-        { role: "bot", content: translatedMessage, isTranslation: true }, // 中文翻译
+        { role: "assistant", content: originalMessage }, // GPT 生成的原始内容
+        { role: "assistant", content: translatedMessage, isTranslation: true }, // 中文翻译
       ]);
     } catch (error: any) {
       if (axios.isAxiosError(error) && error?.response?.status === 403) {
