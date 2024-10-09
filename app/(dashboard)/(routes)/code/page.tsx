@@ -82,6 +82,8 @@ const CodePage = () => {
         axios.post("/api/code", { text: values.prompt })
       );
 
+      console.log("API Response:", response.data); // 添加调试日志，查看 API 响应
+
       const result = response.data;
 
       // 提取重要的检测字段
@@ -92,14 +94,13 @@ const CodePage = () => {
       }));
 
       // 更新消息状态，显示原文和检测结果
-      setMessages((current) => [
-        ...current,
-        userMessage, // 用户输入的消息
-      ]);
+      setMessages((current) => [...current, userMessage]);
+
+      console.log("Processed Result:", processedResult); // 打印处理后的检测结果
 
       // 设置检测结果
       setAiDetectionResult(processedResult);
-    } catch (error: unknown) {
+    } catch (error) {
       if (axios.isAxiosError(error)) {
         if (error.response?.status === 429) {
           toast.error("Too many requests. Please try again later.");
