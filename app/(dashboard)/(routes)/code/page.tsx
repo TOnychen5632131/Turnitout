@@ -30,6 +30,27 @@ type AIDetectionResult = {
   isAi: string;
 };
 
+// 创建延时函数
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+// 创建重试机制，遇到 429 错误时进行重试
+const retryRequest = async (axiosRequest: () => Promise<any>, retries = 3, delayMs = 2000) => {
+  let attempt = 0;
+  while (attempt < retries) {
+    try {
+      return await axiosRequest();
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response?.status === 429 && attempt < retries - 1) {
+        console.log(`Retrying request after ${delayMs}ms...`);
+        await delay(delayMs);
+        attempt++;
+      } else {
+        throw error;
+      }
+    }
+  }
+};
+
 const CodePage = () => {
   const proModal = useProModal();
   const router = useRouter();
@@ -56,10 +77,10 @@ const CodePage = () => {
 
       const newMessages = [...messages, userMessage];
 
-      // 调用后端 API 进行检测
-      const response = await axios.post("/api/code", {
-        text: values.prompt, // 将输入的文本发送到后端
-      });
+      // 调用后端 API 进行检测，并使用重试机制处理 429 错误
+      const response = await retryRequest(() =>
+        axios.post("/api/code", { text: values.prompt })
+      );
 
       const result = response.data;
 
@@ -79,12 +100,16 @@ const CodePage = () => {
       // 设置检测结果
       setAiDetectionResult(processedResult);
     } catch (error: unknown) {
-      if (axios.isAxiosError(error) && error?.response?.status === 403) {
-        proModal.onOpen();
-      } else {
-        toast.error("Something went wrong.");
+      if (axios.isAxiosError(error)) {
+        if (error.response?.status === 429) {
+          toast.error("Too many requests. Please try again later.");
+        } else if (error.response?.status === 403) {
+          proModal.onOpen();
+        } else {
+          toast.error("Something went wrong.");
+        }
       }
-      console.error(error);
+      console.error("[API_ERROR]: ", error);
     } finally {
       form.reset();
       router.refresh();
