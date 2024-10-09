@@ -23,11 +23,20 @@ import { cn } from "@/lib/utils";
 import { codeFormSchema } from "@/schemas";
 import type { ChatCompletionRequestMessage } from "openai";
 
+// 定义检测结果的类型
+type AIDetectionResult = {
+  sentence: string;
+  probability: number;
+  isAi: string;
+};
+
 const CodePage = () => {
   const proModal = useProModal();
   const router = useRouter();
   const [messages, setMessages] = useState<ChatCompletionRequestMessage[]>([]);
-  const [aiDetectionResult, setAiDetectionResult] = useState([]); // 用于保存检测结果
+  
+  // 设置类型为 AIDetectionResult[]
+  const [aiDetectionResult, setAiDetectionResult] = useState<AIDetectionResult[]>([]);
 
   const form = useForm<z.infer<typeof codeFormSchema>>({
     resolver: zodResolver(codeFormSchema),
