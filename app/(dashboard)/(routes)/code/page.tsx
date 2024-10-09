@@ -3,7 +3,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import axios from "axios";
 import { Code } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import ReactMarkdown from "react-markdown";
@@ -23,7 +22,6 @@ import { cn } from "@/lib/utils";
 import { codeFormSchema } from "@/schemas";
 import type { ChatCompletionRequestMessage } from "openai";
 
-// 定义检测结果的类型
 type AIDetectionResult = {
   sentence: string;
   generatedProb: number;
@@ -34,10 +32,10 @@ type AIDetectionResult = {
 
 const CodePage = () => {
   const proModal = useProModal();
-  const router = useRouter();
   const [messages, setMessages] = useState<ChatCompletionRequestMessage[]>([]);
   const [statusCode, setStatusCode] = useState<number | null>(null);
   const [aiDetectionResult, setAiDetectionResult] = useState<AIDetectionResult[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<z.infer<typeof codeFormSchema>>({
     resolver: zodResolver(codeFormSchema),
@@ -46,10 +44,9 @@ const CodePage = () => {
     },
   });
 
-  const isLoading = form.formState.isSubmitting;
-
   const onSubmit = async (values: z.infer<typeof codeFormSchema>) => {
     try {
+      setIsLoading(true); // 开始加载时设置为 true
       const userMessage: ChatCompletionRequestMessage = {
         role: "user",
         content: values.prompt,
@@ -58,8 +55,6 @@ const CodePage = () => {
       const newMessages = [...messages, userMessage];
 
       const response = await axios.post("/api/code", { text: values.prompt });
-
-      console.log("API Response:", response.data);
 
       // 设置状态码
       setStatusCode(response.status);
@@ -75,12 +70,8 @@ const CodePage = () => {
         confidenceScore: result.documents[0].confidence_score,
       }));
 
-      // 更新状态
+      // 更新消息和结果状态
       setMessages((current) => [...current, userMessage]);
-
-      console.log("Processed Result:", processedResult);
-
-      // 设置检测结果
       setAiDetectionResult(processedResult);
     } catch (error) {
       if (axios.isAxiosError(error)) {
@@ -89,15 +80,14 @@ const CodePage = () => {
         } else if (error.response?.status === 403) {
           proModal.onOpen();
         } else {
-          // 捕获并设置错误状态码
           setStatusCode(error.response?.status || 500);
           toast.error("Something went wrong.");
         }
       }
       console.error("[API_ERROR]: ", error);
     } finally {
+      setIsLoading(false); // 请求完成后重置加载状态
       form.reset();
-      router.refresh();
     }
   };
 
@@ -194,16 +184,14 @@ const CodePage = () => {
           </div>
 
           {/* 在页面显示状态码 */}
-          {statusCode && (
-            <div className="mt-4">
-              <p>
-                <strong>API Status Code:</strong> {statusCode}
-              </p>
-            </div>
-          )}
+          <div className="mt-4">
+            <p>
+              <strong>API Status Code:</strong> {statusCode ? statusCode : "--"}
+            </p>
+          </div>
 
           {/* 在页面显示 AI 检测结果 */}
-          {aiDetectionResult.length > 0 && (
+          {aiDetectionResult.length > 0 ? (
             <div className="mt-6">
               <h2 className="text-lg font-bold">AI Detection Results</h2>
               {aiDetectionResult.map((result, index) => (
@@ -231,6 +219,10 @@ const CodePage = () => {
                   </p>
                 </div>
               ))}
+            </div>
+          ) : (
+            <div className="mt-4">
+              <p>No AI detection results.</p>
             </div>
           )}
         </div>
