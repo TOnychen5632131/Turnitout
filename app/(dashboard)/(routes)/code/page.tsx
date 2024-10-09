@@ -26,29 +26,10 @@ import type { ChatCompletionRequestMessage } from "openai";
 // 定义检测结果的类型
 type AIDetectionResult = {
   sentence: string;
-  probability: number;
-  isAi: string;
-};
-
-// 创建延时函数
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
-// 创建重试机制，遇到 429 错误时进行重试
-const retryRequest = async (axiosRequest: () => Promise<any>, retries = 3, delayMs = 2000) => {
-  let attempt = 0;
-  while (attempt < retries) {
-    try {
-      return await axiosRequest();
-    } catch (error) {
-      if (axios.isAxiosError(error) && error.response?.status === 429 && attempt < retries - 1) {
-        console.log(`Retrying request after ${delayMs}ms...`);
-        await delay(delayMs);
-        attempt++;
-      } else {
-        throw error;
-      }
-    }
-  }
+  generatedProb: number;
+  classification: string;
+  confidenceCategory: string;
+  confidenceScore: number;
 };
 
 const CodePage = () => {
@@ -56,7 +37,6 @@ const CodePage = () => {
   const router = useRouter();
   const [messages, setMessages] = useState<ChatCompletionRequestMessage[]>([]);
   
-  // 设置类型为 AIDetectionResult[]
   const [aiDetectionResult, setAiDetectionResult] = useState<AIDetectionResult[]>([]);
 
   const form = useForm<z.infer<typeof codeFormSchema>>({
@@ -77,26 +57,25 @@ const CodePage = () => {
 
       const newMessages = [...messages, userMessage];
 
-      // 调用后端 API 进行检测，并使用重试机制处理 429 错误
-      const response = await retryRequest(() =>
-        axios.post("/api/code", { text: values.prompt })
-      );
+      const response = await axios.post("/api/code", { text: values.prompt });
 
-      console.log("API Response:", response.data); // 添加调试日志，查看 API 响应
+      console.log("API Response:", response.data);
 
       const result = response.data;
 
-      // 提取重要的检测字段
-      const processedResult = result.sentences.map((sentence: any) => ({
+      // 提取重要字段
+      const processedResult = result.documents[0].sentences.map((sentence: any) => ({
         sentence: sentence.sentence,
-        probability: sentence.generated_prob,
-        isAi: sentence.highlight_sentence_for_ai ? "AI-Generated" : "Human",
+        generatedProb: sentence.generated_prob,
+        classification: result.documents[0].predicted_class,
+        confidenceCategory: result.documents[0].confidence_category,
+        confidenceScore: result.documents[0].confidence_score,
       }));
 
-      // 更新消息状态，显示原文和检测结果
+      // 更新状态
       setMessages((current) => [...current, userMessage]);
 
-      console.log("Processed Result:", processedResult); // 打印处理后的检测结果
+      console.log("Processed Result:", processedResult);
 
       // 设置检测结果
       setAiDetectionResult(processedResult);
@@ -120,7 +99,7 @@ const CodePage = () => {
   return (
     <div>
       <Heading
-        title="Code Generation"
+        title="Ai检测"
         description="Generate code using descriptive text."
         icon={Code}
         iconColor="text-green-700"
@@ -222,10 +201,16 @@ const CodePage = () => {
                     <strong>Sentence:</strong> {result.sentence}
                   </p>
                   <p>
-                    <strong>Generated Probability:</strong> {result.probability.toFixed(4)}
+                    <strong>Generated Probability:</strong> {result.generatedProb.toFixed(4)}
                   </p>
                   <p>
-                    <strong>Classification:</strong> {result.isAi}
+                    <strong>Classification:</strong> {result.classification}
+                  </p>
+                  <p>
+                    <strong>Confidence Category:</strong> {result.confidenceCategory}
+                  </p>
+                  <p>
+                    <strong>Confidence Score:</strong> {result.confidenceScore.toFixed(4)}
                   </p>
                 </div>
               ))}
