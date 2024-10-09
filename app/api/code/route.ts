@@ -1,58 +1,37 @@
-import { auth } from "@clerk/nextjs";
-import { type NextRequest, NextResponse } from "next/server";
-import {
-  type ChatCompletionRequestMessage,
-  Configuration,
-  OpenAIApi,
-} from "openai";
-
-import { increaseApiLimit, checkApiLimit } from "@/lib/api-limit";
-import { checkSubscription } from "@/lib/subscription";
-
-const configuration = new Configuration({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
-const openai = new OpenAIApi(configuration);
-
-const intructionMessage: ChatCompletionRequestMessage = {
-  role: "system",
-  content:
-    "You are a code generator. You must answer only in markdown code snippets. Use code comments for explaination.",
-};
+import { NextRequest, NextResponse } from "next/server";
+import axios from "axios";
+import FormData from "form-data";
 
 export async function POST(req: NextRequest) {
   try {
-    const { userId } = auth();
-
     const body = await req.json();
-    const { messages } = body;
+    const { text } = body; // 从前端接收到的文本
 
-    if (!userId) return new NextResponse("Unauthorized.", { status: 401 });
-    if (!configuration.apiKey)
-      return new NextResponse("OpenAI api key not configured.", {
-        status: 500,
-      });
+    if (!text) return new NextResponse("Text is required.", { status: 400 });
 
-    if (!messages)
-      return new NextResponse("Messages are required.", { status: 400 });
+    // 创建 FormData 对象
+    const data = new FormData();
+    data.append('text', text);
 
-    const freeTrial = await checkApiLimit();
-    const isPro = await checkSubscription();
+    // 配置 axios 请求
+    const options = {
+      method: 'POST',
+      url: 'https://gptzero-api.p.rapidapi.com/v1/detectAIDeep',
+      headers: {
+        'x-rapidapi-key': process.env.RAPIDAPI_KEY, // 使用环境变量来存储密钥
+        'x-rapidapi-host': 'gptzero-api.p.rapidapi.com',
+        ...data.getHeaders(),
+      },
+      data: data,
+    };
 
-    if (!freeTrial && !isPro)
-      return new NextResponse("Free trial has expired.", { status: 403 });
+    // 发送请求到 GPTZero API
+    const response = await axios.request(options);
 
-    const response = await openai.createChatCompletion({
-      model: "gpt-3.5-turbo",
-      messages: [intructionMessage, ...messages],
-    });
-
-    if (!isPro) await increaseApiLimit();
-
-    return NextResponse.json(response.data.choices[0].message, { status: 200 });
-  } catch (error: unknown) {
-    console.error("[CODE_ERROR]: ", error);
+    // 返回 API 的检测结果
+    return NextResponse.json({ result: response.data }, { status: 200 });
+  } catch (error: any) {
+    console.error("[API_ERROR]: ", error);
     return new NextResponse("Internal server error.", { status: 500 });
   }
 }

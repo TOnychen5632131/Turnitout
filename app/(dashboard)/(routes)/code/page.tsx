@@ -4,7 +4,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import axios from "axios";
 import { Code } from "lucide-react";
 import { useRouter } from "next/navigation";
-import type { ChatCompletionRequestMessage } from "openai";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import ReactMarkdown from "react-markdown";
@@ -26,7 +25,7 @@ import { codeFormSchema } from "@/schemas";
 const CodePage = () => {
   const proModal = useProModal();
   const router = useRouter();
-  const [messages, setMessages] = useState<ChatCompletionRequestMessage[]>([]);
+  const [messages, setMessages] = useState([]);
 
   const form = useForm<z.infer<typeof codeFormSchema>>({
     resolver: zodResolver(codeFormSchema),
@@ -39,23 +38,29 @@ const CodePage = () => {
 
   const onSubmit = async (values: z.infer<typeof codeFormSchema>) => {
     try {
-      const userMessage: ChatCompletionRequestMessage = {
+      const userMessage = {
         role: "user",
         content: values.prompt,
       };
 
       const newMessages = [...messages, userMessage];
 
+      // 调用后端 API 进行检测
       const response = await axios.post("/api/code", {
-        messages: newMessages,
+        text: values.prompt, // 将输入的文本发送到后端
       });
 
-      setMessages((current) => [...current, userMessage, response.data]);
+      setMessages((current) => [
+        ...current,
+        userMessage,
+        { role: "assistant", content: response.data.result }, // 后端返回的检测结果
+      ]);
     } catch (error: unknown) {
-      if (axios.isAxiosError(error) && error?.response?.status === 403)
+      if (axios.isAxiosError(error) && error?.response?.status === 403) {
         proModal.onOpen();
-      else toast.error("Something went wrong.");
-
+      } else {
+        toast.error("Something went wrong.");
+      }
       console.error(error);
     } finally {
       form.reset();
@@ -91,7 +96,7 @@ const CodePage = () => {
                         className="border-0 outline-none focus-visible:ring-0 focus-visible:ring-transparent"
                         disabled={isLoading}
                         aria-disabled={isLoading}
-                        placeholder="Simple toggle button using React hooks."
+                        placeholder="Enter text to check for AI generation..."
                         {...field}
                       />
                     </FormControl>
@@ -104,7 +109,7 @@ const CodePage = () => {
                 disabled={isLoading}
                 aria-disabled={isLoading}
               >
-                Generate
+                Check
               </Button>
             </form>
           </Form>
@@ -120,9 +125,9 @@ const CodePage = () => {
             <Empty label="No conversation started." />
           )}
           <div className="flex flex-col-reverse gap-y-4">
-            {messages.map((message) => (
+            {messages.map((message, i) => (
               <div
-                key={message.content}
+                key={`${i}-${message.content}`}
                 className={cn(
                   "p-8 w-full flex items-start gap-x-8 rounded-lg",
                   message.role === "user"
