@@ -45,16 +45,27 @@ const ConversationPage = () => {
 
       const newMessages = [...messages, userMessage];
 
+      // 调用后端 API 请求生成原始内容和中文翻译
       const response = await axios.post("/api/conversation", {
         messages: newMessages,
       });
 
-      setMessages((current) => [...current, userMessage, response.data]);
-    } catch (error: any) {
-      if (axios.isAxiosError(error) && error?.response?.status === 403)
-        proModal.onOpen();
-      else toast.error("Something went wrong.");
+      // 获取返回的原始和翻译内容
+      const { originalMessage, translatedMessage } = response.data;
 
+      // 更新消息状态，包含原始内容和翻译
+      setMessages((current) => [
+        ...current,
+        userMessage, // 用户输入
+        { role: "bot", content: originalMessage }, // GPT 生成的原始内容
+        { role: "bot", content: translatedMessage, isTranslation: true }, // 中文翻译
+      ]);
+    } catch (error: any) {
+      if (axios.isAxiosError(error) && error?.response?.status === 403) {
+        proModal.onOpen();
+      } else {
+        toast.error("Something went wrong.");
+      }
       console.error(error);
     } finally {
       form.reset();
@@ -126,22 +137,26 @@ const ConversationPage = () => {
                   "p-8 w-full flex items-start gap-x-8 rounded-lg",
                   message.role === "user"
                     ? "bg-white border border-black/10"
-                    : "bg-muted",
+                    : message.isTranslation
+                    ? "bg-gray-100 text-right" // 翻译内容右对齐显示
+                    : "bg-muted"
                 )}
               >
                 {message.role === "user" ? <UserAvatar /> : <BotAvatar />}
                 <div>
                   <p className="text-sm">{message.content}</p>
                   {/* 显示单词计数器，处理中英文混合文本 */}
-                  <p className="text-xs text-gray-500">
-                    {`Word count: ${
-                      message.content
-                        ? message.content
-                            .split(/[\s]+|(?=[\u4e00-\u9fa5])/)
-                            .filter(word => word.trim().length > 0).length
-                        : 0
-                    }`}
-                  </p>
+                  {!message.isTranslation && (
+                    <p className="text-xs text-gray-500">
+                      {`Word count: ${
+                        message.content
+                          ? message.content
+                              .split(/[\s]+|(?=[\u4e00-\u9fa5])/)
+                              .filter(word => word.trim().length > 0).length
+                          : 0
+                      }`}
+                    </p>
+                  )}
                 </div>
               </div>
             ))}
