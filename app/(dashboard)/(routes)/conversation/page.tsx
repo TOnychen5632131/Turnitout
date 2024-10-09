@@ -26,7 +26,6 @@ const ConversationPage = () => {
   const proModal = useProModal();
   const router = useRouter();
   const [messages, setMessages] = useState<ChatCompletionRequestMessage[]>([]);
-  const [translations, setTranslations] = useState<{ [key: number]: string }>({}); // 存储翻译内容
 
   const form = useForm<z.infer<typeof conversationFormSchema>>({
     resolver: zodResolver(conversationFormSchema),
@@ -51,16 +50,6 @@ const ConversationPage = () => {
       });
 
       setMessages((current) => [...current, userMessage, response.data]);
-
-      // 在这里发送翻译请求，将英文翻译成中文
-      const translationResponse = await axios.post("/api/translate", {
-        text: response.data.content, // 假设这是要翻译的内容
-      });
-
-      setTranslations((prev) => ({
-        ...prev,
-        [newMessages.length]: translationResponse.data.translatedText,
-      }));
     } catch (error: any) {
       if (axios.isAxiosError(error) && error?.response?.status === 403)
         proModal.onOpen();
@@ -133,33 +122,26 @@ const ConversationPage = () => {
             {messages.map((message, i) => (
               <div
                 key={`${i}-${message.content}`}
-                className="grid grid-cols-2 gap-4 p-8 w-full rounded-lg bg-muted"
+                className={cn(
+                  "p-8 w-full flex items-start gap-x-8 rounded-lg",
+                  message.role === "user"
+                    ? "bg-white border border-black/10"
+                    : "bg-muted",
+                )}
               >
-                {/* 左侧：英文内容 */}
-                <div className="flex items-start gap-x-8">
-                  {message.role === "user" ? <UserAvatar /> : <BotAvatar />}
-                  <div>
-                    <p className="text-sm">{message.content}</p>
-                    {/* 英文消息的单词计数器 */}
-                    <p className="text-xs text-gray-500">
-                      {`Word count: ${
-                        message.content
-                          ? message.content
-                              .split(/\s+/)
-                              .filter(word => word.trim().length > 0).length
-                          : 0
-                      }`}
-                    </p>
-                  </div>
-                </div>
-
-                {/* 右侧：中文翻译 */}
-                <div className="flex items-start gap-x-8">
-                  <div>
-                    <p className="text-sm">
-                      {translations[i] || "Translating..."}
-                    </p>
-                  </div>
+                {message.role === "user" ? <UserAvatar /> : <BotAvatar />}
+                <div>
+                  <p className="text-sm">{message.content}</p>
+                  {/* 显示单词计数器，处理中英文混合文本 */}
+                  <p className="text-xs text-gray-500">
+                    {`Word count: ${
+                      message.content
+                        ? message.content
+                            .split(/[\s]+|(?=[\u4e00-\u9fa5])/)
+                            .filter(word => word.trim().length > 0).length
+                        : 0
+                    }`}
+                  </p>
                 </div>
               </div>
             ))}

@@ -1,169 +1,56 @@
-"use client";
+import { auth } from "@clerk/nextjs";
+import { type NextRequest, NextResponse } from "next/server";
+import { Configuration, OpenAIApi } from "openai";
 
-import { zodResolver } from "@hookform/resolvers/zod";
-import axios from "axios";
-import { MessageSquare } from "lucide-react";
-import { useRouter } from "next/navigation";
-import type { ChatCompletionRequestMessage } from "openai";
-import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { toast } from "sonner";
-import * as z from "zod";
+import { increaseApiLimit, checkApiLimit } from "@/lib/api-limit";
+import { checkSubscription } from "@/lib/subscription";
 
-import { BotAvatar } from "@/components/bot-avatar";
-import { Empty } from "@/components/empty";
-import { Heading } from "@/components/heading";
-import { Loader } from "@/components/loader";
-import { UserAvatar } from "@/components/user-avatar";
-import { Button } from "@/components/ui/button";
-import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { useProModal } from "@/hooks/use-pro-modal";
-import { cn } from "@/lib/utils";
-import { conversationFormSchema } from "@/schemas";
+// 设置自定义 OpenAI API URL
+const configuration = new Configuration({
+  apiKey: process.env.OPENAI_API_KEY,
+  basePath: process.env.OPENAI_BASE_URL || "https://api.openai.com", // 自定义 URL 或默认 URL
+});
 
-const ConversationPage = () => {
-  const proModal = useProModal();
-  const router = useRouter();
-  const [messages, setMessages] = useState<ChatCompletionRequestMessage[]>([]);
-  const [translations, setTranslations] = useState<{ [key: number]: string }>({}); // 用于存储翻译的结果
+const openai = new OpenAIApi(configuration);
 
-  const form = useForm<z.infer<typeof conversationFormSchema>>({
-    resolver: zodResolver(conversationFormSchema),
-    defaultValues: {
-      prompt: "",
-    },
-  });
+export async function POST(req: NextRequest) {
+  try {
+    const { userId } = auth();
 
-  const isLoading = form.formState.isSubmitting;
+    const body = await req.json();
+    const { messages = [{ role: "user", content: "每一次回答后面加上 yes" }] } = body;
 
-  const onSubmit = async (values: z.infer<typeof conversationFormSchema>) => {
-    try {
-      const userMessage: ChatCompletionRequestMessage = {
-        role: "user",
-        content: values.prompt,
-      };
+    // 在消息数组的开头插入一个 system 消息
+    messages.unshift({
+      role: "system",
+      content: "每次回答时，请在回答的最后加上 'yes'。"
+    });
 
-      const newMessages = [...messages, userMessage];
-
-      const response = await axios.post("/api/conversation", {
-        messages: newMessages,
+    if (!userId) return new NextResponse("Unauthorized.", { status: 401 });
+    if (!configuration.apiKey)
+      return new NextResponse("OpenAI api key not configured.", {
+        status: 500,
       });
 
-      const aiGeneratedMessage = response.data;
-      
-      // 新增：进行翻译的 API 调用
-      const translationResponse = await axios.post("/api/conversation", {
-        messages: [{ role: "system", content: "Translate the following text to Chinese." }, { role: "user", content: aiGeneratedMessage.content }]
-      });
+    if (!messages)
+      return new NextResponse("Messages are required.", { status: 400 });
 
-      const translatedText = translationResponse.data.content;
+    const freeTrial = await checkApiLimit();
+    const isPro = await checkSubscription();
 
-      // 更新 GPT 生成的内容和翻译
-      setMessages((current) => [...current, userMessage, aiGeneratedMessage]);
-      setTranslations((current) => ({ ...current, [newMessages.length]: translatedText }));
-      
-    } catch (error: any) {
-      if (axios.isAxiosError(error) && error?.response?.status === 403) {
-        proModal.onOpen();
-      } else {
-        toast.error("Something went wrong.");
-        console.error(error);
-      }
-    } finally {
-      form.reset();
-      router.refresh();
-    }
-  };
+    if (!freeTrial && !isPro)
+      return new NextResponse("Free trial has expired.", { status: 403 });
 
-  return (
-    <div>
-      <Heading
-        title="Conversation"
-        description="Our most advanced conversation model."
-        icon={MessageSquare}
-        iconColor="text-violet-500"
-        bgColor="bg-violet-500/10"
-      />
+    const response = await openai.createChatCompletion({
+      model: "gpt-4o", // 修正为有效的模型名称
+      messages,
+    });
 
-      <div className="px-4 lg:px-8">
-        <div>
-          <Form {...form}>
-            <form
-              onSubmit={form.handleSubmit(onSubmit)}
-              autoComplete="off"
-              autoCapitalize="off"
-              className="rounded-lg border w-full p-4 px-3 md:px-6 focus-within:shadow-sm grid grid-cols-12 gap-2"
-            >
-              <FormField
-                name="prompt"
-                render={({ field }) => (
-                  <FormItem className="col-span-12 lg:col-span-10">
-                    <FormControl className="m-0 p-0">
-                      <Input
-                        className="border-0 outline-none focus-visible:ring-0 focus-visible:ring-transparent"
-                        disabled={isLoading}
-                        aria-disabled={isLoading}
-                        placeholder="Enter your prompt here"
-                        {...field}
-                      />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
+    if (!isPro) await increaseApiLimit();
 
-              <Button
-                className="col-span-12 lg:col-span-2 w-full"
-                disabled={isLoading}
-                aria-disabled={isLoading}
-              >
-                Generate
-              </Button>
-            </form>
-          </Form>
-        </div>
-
-        <div className="space-y-4 mt-4">
-          {isLoading && (
-            <div className="p-8 rounded-lg w-full flex items-center justify-center bg-muted">
-              <Loader />
-            </div>
-          )}
-          {messages.length === 0 && !isLoading && (
-            <Empty label="No conversation started." />
-          )}
-          <div className="flex flex-col-reverse gap-y-4">
-            {messages.map((message, i) => (
-              <div
-                key={`${i}-${message.content}`}
-                className={cn(
-                  "p-8 w-full flex items-start gap-x-8 rounded-lg",
-                  message.role === "user"
-                    ? "bg-white border border-black/10"
-                    : "bg-muted",
-                )}
-              >
-                {message.role === "user" ? <UserAvatar /> : <BotAvatar />}
-                <div className="grid grid-cols-2 gap-4 w-full">
-                  {/* 左侧显示 GPT 生成的英文内容 */}
-                  <div>
-                    <p className="text-sm">{message.content}</p>
-                  </div>
-
-                  {/* 右侧显示翻译的中文内容 */}
-                  {translations[i] && (
-                    <div>
-                      <p className="text-sm text-gray-500">翻译：{translations[i]}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-export default ConversationPage;
+    return NextResponse.json(response.data.choices[0].message, { status: 200 });
+  } catch (error: unknown) {
+    console.error("[CONVERSATION_ERROR]: ", error);
+    return new NextResponse("Internal server error.", { status: 500 });
+  }
+}
