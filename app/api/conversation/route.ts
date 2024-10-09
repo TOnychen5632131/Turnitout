@@ -1,6 +1,6 @@
 import { auth } from "@clerk/nextjs";
 import { type NextRequest, NextResponse } from "next/server";
-import { Configuration, OpenAIApi } from "openai";
+import { Configuration, OpenAIApi, ChatCompletionRequestMessageRoleEnum } from "openai";
 
 import { increaseApiLimit, checkApiLimit } from "@/lib/api-limit";
 import { checkSubscription } from "@/lib/subscription";
@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
 
     // 在消息数组的开头插入一个 system 消息
     messages.unshift({
-      role: "system",
+      role: ChatCompletionRequestMessageRoleEnum.System, // 这里将 role 设置为 'system' 枚举类型
       content: "每次回答时，请在回答的最后加上 'yes'。",
     });
 
@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
 
     // 调用 OpenAI 生成英文内容
     const englishResponse = await openai.createChatCompletion({
-      model: "gpt-4", // 使用正确的模型名称
+      model: "gpt-4",
       messages,
     });
 
@@ -56,8 +56,8 @@ export async function POST(req: NextRequest) {
 
     // 使用 OpenAI API 将英文内容翻译为中文
     const translationMessages = [
-      { role: "system", content: "你是一个翻译助手，请将给定的英文内容翻译成中文。" },
-      { role: "user", content: englishMessage }, // 将生成的英文作为用户消息传递给翻译请求
+      { role: ChatCompletionRequestMessageRoleEnum.System, content: "你是一个翻译助手，请将给定的英文内容翻译成中文。" }, // 正确使用 ChatCompletionRequestMessageRoleEnum
+      { role: ChatCompletionRequestMessageRoleEnum.User, content: englishMessage }, // 将生成的英文作为用户消息传递给翻译请求
     ];
 
     const translationResponse = await openai.createChatCompletion({
