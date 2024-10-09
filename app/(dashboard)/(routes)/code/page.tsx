@@ -21,11 +21,14 @@ import { Input } from "@/components/ui/input";
 import { useProModal } from "@/hooks/use-pro-modal";
 import { cn } from "@/lib/utils";
 import { codeFormSchema } from "@/schemas";
+import type { ChatCompletionRequestMessage } from "openai"; // 确保正确导入类型
 
 const CodePage = () => {
   const proModal = useProModal();
   const router = useRouter();
-  const [messages, setMessages] = useState([]);
+  
+  // 修改 useState 的类型为 ChatCompletionRequestMessage[]
+  const [messages, setMessages] = useState<ChatCompletionRequestMessage[]>([]);
 
   const form = useForm<z.infer<typeof codeFormSchema>>({
     resolver: zodResolver(codeFormSchema),
@@ -38,7 +41,7 @@ const CodePage = () => {
 
   const onSubmit = async (values: z.infer<typeof codeFormSchema>) => {
     try {
-      const userMessage = {
+      const userMessage: ChatCompletionRequestMessage = {
         role: "user",
         content: values.prompt,
       };
@@ -50,9 +53,10 @@ const CodePage = () => {
         text: values.prompt, // 将输入的文本发送到后端
       });
 
+      // 更新消息状态，包含用户输入和后端返回的内容
       setMessages((current) => [
         ...current,
-        userMessage,
+        userMessage, // 用户输入的消息
         { role: "assistant", content: response.data.result }, // 后端返回的检测结果
       ]);
     } catch (error: unknown) {
