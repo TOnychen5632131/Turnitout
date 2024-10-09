@@ -36,7 +36,7 @@ const CodePage = () => {
   const proModal = useProModal();
   const router = useRouter();
   const [messages, setMessages] = useState<ChatCompletionRequestMessage[]>([]);
-  
+  const [statusCode, setStatusCode] = useState<number | null>(null);
   const [aiDetectionResult, setAiDetectionResult] = useState<AIDetectionResult[]>([]);
 
   const form = useForm<z.infer<typeof codeFormSchema>>({
@@ -60,6 +60,9 @@ const CodePage = () => {
       const response = await axios.post("/api/code", { text: values.prompt });
 
       console.log("API Response:", response.data);
+
+      // 设置状态码
+      setStatusCode(response.status);
 
       const result = response.data;
 
@@ -86,6 +89,8 @@ const CodePage = () => {
         } else if (error.response?.status === 403) {
           proModal.onOpen();
         } else {
+          // 捕获并设置错误状态码
+          setStatusCode(error.response?.status || 500);
           toast.error("Something went wrong.");
         }
       }
@@ -99,7 +104,7 @@ const CodePage = () => {
   return (
     <div>
       <Heading
-        title="Ai检测"
+        title="Code Generation"
         description="Generate code using descriptive text."
         icon={Code}
         iconColor="text-green-700"
@@ -188,6 +193,15 @@ const CodePage = () => {
             ))}
           </div>
 
+          {/* 在页面显示状态码 */}
+          {statusCode && (
+            <div className="mt-4">
+              <p>
+                <strong>API Status Code:</strong> {statusCode}
+              </p>
+            </div>
+          )}
+
           {/* 在页面显示 AI 检测结果 */}
           {aiDetectionResult.length > 0 && (
             <div className="mt-6">
@@ -201,16 +215,19 @@ const CodePage = () => {
                     <strong>Sentence:</strong> {result.sentence}
                   </p>
                   <p>
-                    <strong>Generated Probability:</strong> {result.generatedProb.toFixed(4)}
+                    <strong>Generated Probability:</strong>{" "}
+                    {result.generatedProb.toFixed(4)}
                   </p>
                   <p>
                     <strong>Classification:</strong> {result.classification}
                   </p>
                   <p>
-                    <strong>Confidence Category:</strong> {result.confidenceCategory}
+                    <strong>Confidence Category:</strong>{" "}
+                    {result.confidenceCategory}
                   </p>
                   <p>
-                    <strong>Confidence Score:</strong> {result.confidenceScore.toFixed(4)}
+                    <strong>Confidence Score:</strong>{" "}
+                    {result.confidenceScore.toFixed(4)}
                   </p>
                 </div>
               ))}
