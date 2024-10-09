@@ -59,17 +59,28 @@ export async function POST(req: Request) {
         messages: [{ role: "system", content: translationPrompt }],
       });
 
-      const translatedMessage = translationResponse.data.choices[0].message.content;
+      // 安全检查 translationResponse，确保数据存在
+      if (
+        translationResponse &&
+        translationResponse.data &&
+        translationResponse.data.choices &&
+        translationResponse.data.choices[0] &&
+        translationResponse.data.choices[0].message
+      ) {
+        const translatedMessage = translationResponse.data.choices[0].message.content;
 
-      if (!isPro) await increaseApiLimit();
+        if (!isPro) await increaseApiLimit();
 
-      // 返回原始内容和翻译内容
-      return NextResponse.json(
-        { originalMessage, translatedMessage },
-        { status: 200 }
-      );
+        // 返回原始内容和翻译内容
+        return NextResponse.json(
+          { originalMessage, translatedMessage },
+          { status: 200 }
+        );
+      } else {
+        console.error("Translation response is invalid or incomplete");
+        return NextResponse.json({ error: "Invalid translation response from OpenAI" }, { status: 500 });
+      }
     } else {
-      // 处理错误情况
       console.error("Response data is invalid or incomplete");
       return NextResponse.json({ error: "Invalid response from OpenAI" }, { status: 500 });
     }
