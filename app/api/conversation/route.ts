@@ -47,25 +47,37 @@ export async function POST(req: NextRequest) {
       messages,
     });
 
-    const englishText = englishResponse.data.choices[0].message.content; // 获取生成的英文内容
+    const englishMessage = englishResponse?.data?.choices?.[0]?.message?.content;
 
-    // 使用 OpenAI API 翻译英文内容为中文
+    // 检查生成的英文内容是否有效
+    if (!englishMessage) {
+      return new NextResponse("Failed to generate English content.", { status: 500 });
+    }
+
+    // 使用 OpenAI API 将英文内容翻译为中文
+    const translationMessages = [
+      { role: "system", content: "你是一个翻译助手，请将给定的英文内容翻译成中文。" },
+      { role: "user", content: englishMessage }, // 将生成的英文作为用户消息传递给翻译请求
+    ];
+
     const translationResponse = await openai.createChatCompletion({
       model: "gpt-4",
-      messages: [
-        { role: "system", content: "你是一个翻译助手，请将给定的英文内容翻译成中文。" },
-        { role: "user", content: englishText },
-      ],
+      messages: translationMessages,
     });
 
-    const translatedText = translationResponse.data.choices[0].message.content; // 获取翻译后的中文内容
+    const translatedMessage = translationResponse?.data?.choices?.[0]?.message?.content;
+
+    // 检查生成的中文翻译是否有效
+    if (!translatedMessage) {
+      return new NextResponse("Failed to translate English content.", { status: 500 });
+    }
 
     if (!isPro) await increaseApiLimit();
 
     // 返回英文和中文翻译结果
     return NextResponse.json({
-      english: englishText,
-      chinese: translatedText,
+      english: englishMessage,
+      chinese: translatedMessage,
     }, { status: 200 });
 
   } catch (error: unknown) {
