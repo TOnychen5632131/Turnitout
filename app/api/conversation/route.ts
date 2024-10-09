@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
     // 在消息数组的开头插入一个 system 消息
     messages.unshift({
       role: "system",
-      content: "每次回答时，请在回答的最后加上 'yes'。"
+      content: "每次回答时，请在回答的最后加上 'yes'。",
     });
 
     if (!userId) return new NextResponse("Unauthorized.", { status: 401 });
@@ -41,14 +41,33 @@ export async function POST(req: NextRequest) {
     if (!freeTrial && !isPro)
       return new NextResponse("Free trial has expired.", { status: 403 });
 
-    const response = await openai.createChatCompletion({
-      model: "gpt-4o", // 修正为有效的模型名称
+    // 调用 OpenAI 生成英文内容
+    const englishResponse = await openai.createChatCompletion({
+      model: "gpt-4", // 使用正确的模型名称
       messages,
     });
 
+    const englishText = englishResponse.data.choices[0].message.content; // 获取生成的英文内容
+
+    // 使用 OpenAI API 翻译英文内容为中文
+    const translationResponse = await openai.createChatCompletion({
+      model: "gpt-4",
+      messages: [
+        { role: "system", content: "你是一个翻译助手，请将给定的英文内容翻译成中文。" },
+        { role: "user", content: englishText },
+      ],
+    });
+
+    const translatedText = translationResponse.data.choices[0].message.content; // 获取翻译后的中文内容
+
     if (!isPro) await increaseApiLimit();
 
-    return NextResponse.json(response.data.choices[0].message, { status: 200 });
+    // 返回英文和中文翻译结果
+    return NextResponse.json({
+      english: englishText,
+      chinese: translatedText,
+    }, { status: 200 });
+
   } catch (error: unknown) {
     console.error("[CONVERSATION_ERROR]: ", error);
     return new NextResponse("Internal server error.", { status: 500 });
