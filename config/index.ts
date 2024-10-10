@@ -39,10 +39,7 @@ export const siteConfig: Metadata = {
   ] as Array<string>,
   authors: {
     name: "Sanidhya Kumar Verma",
-    url: "https://github.com/sanidhyy",
   },
 } as const;
 
-export const links = {
-  sourceCode: "https://github.com/sanidhyy/genius-ai",
-} as const;
+export const links = {} as const;

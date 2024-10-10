@@ -26,7 +26,7 @@ export const LandingNavbar = () => {
         </div>
 
         <h1 className={cn("text-2xl font-bold text-white", font.className)}>
-          Genius
+          Turnitout
         </h1>
       </Link>
 
