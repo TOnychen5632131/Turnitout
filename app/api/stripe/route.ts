@@ -44,10 +44,10 @@ export async function GET() {
           price_data: {
             currency: "USD",
             product_data: {
-              name: "Genius Pro",
-              description: "Unlimited AI Generations.",
+              name: "Turnitout Pro",
+              description: "无限使用降低 Ai 率。",
             },
-            unit_amount: 2000, // $20
+            unit_amount: 1000, // $20
             recurring: {
               interval: "month",
             },

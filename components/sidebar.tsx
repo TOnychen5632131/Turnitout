@@ -32,7 +32,7 @@ export const Sidebar = ({ apiLimitCount = 0, isPro = false }: SidebarProps) => {
           </div>
 
           <h1 className={cn("text-2xl font-bold", montserrat.className)}>
-            Genius
+            Turnitout
           </h1>
         </Link>
 

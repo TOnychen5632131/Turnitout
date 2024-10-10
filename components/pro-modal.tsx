@@ -45,9 +45,9 @@ export const ProModal = () => {
         <DialogHeader>
           <DialogTitle className="flex justify-center items-center flex-col gap-y-4 pb-2">
             <div className="flex items-center gap-x-2 font-bold py-1">
-              Upgrade to Genius
+              升级成 Turnitout
               <Badge className="uppercase text-sm py-1" variant="premium">
-                pro
+                专业版
               </Badge>
             </div>
           </DialogTitle>
@@ -81,7 +81,7 @@ export const ProModal = () => {
             disabled={isLoading}
             aria-disabled={isLoading}
           >
-            Upgrade
+            升级
             <Zap className="w-4 h-4 ml-4 fill-white" />
           </Button>
         </DialogFooter>
