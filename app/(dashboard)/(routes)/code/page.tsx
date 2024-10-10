@@ -119,7 +119,7 @@ const CodePage = () => {
   return (
     <div>
       <Heading
-        title="Code 11111"
+        title="Ai率检测"
         description="Generate code using descriptive text."
         icon={Code}
         iconColor="text-green-700"
@@ -144,7 +144,7 @@ const CodePage = () => {
                         className="border-0 outline-none focus-visible:ring-0 focus-visible:ring-transparent"
                         disabled={isLoading}
                         aria-disabled={isLoading}
-                        placeholder="Enter text to check for AI generation or type 'test'..."
+                        placeholder="将需要检测的文本放入文本框"
                         {...field}
                       />
                     </FormControl>
@@ -157,7 +157,7 @@ const CodePage = () => {
                 disabled={isLoading}
                 aria-disabled={isLoading}
               >
-                Check
+                检查
               </Button>
             </form>
           </Form>

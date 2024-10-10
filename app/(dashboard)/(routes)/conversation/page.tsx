@@ -81,8 +81,8 @@ const ConversationPage = () => {
   return (
     <div>
       <Heading
-        title="Conversation"
-        description="Our most advanced conversation model."
+        title="降AI率"
+        description="用魔法打败魔法🪄"
         icon={MessageSquare}
         iconColor="text-violet-500"
         bgColor="bg-violet-500/10"
@@ -106,7 +106,7 @@ const ConversationPage = () => {
                         className="border-0 outline-none focus-visible:ring-0 focus-visible:ring-transparent"
                         disabled={isLoading}
                         aria-disabled={isLoading}
-                        placeholder="How do I calculate the radius of a circle?"
+                        placeholder="将文章放入文本框"
                         {...field}
                       />
                     </FormControl>
@@ -119,7 +119,7 @@ const ConversationPage = () => {
                 disabled={isLoading}
                 aria-disabled={isLoading}
               >
-                Generate
+                降低 AI 率
               </Button>
             </form>
           </Form>
