@@ -18,31 +18,33 @@ export const TESTIMONIALS = [
   {
     name: "Carlos",
     image: "/testimonials/user-1.jpeg",
-    title: "Marketing Specialist",
+    title: "留学生",
     description:
-      "This application has significantly boosted our marketing efforts.",
+      "这个工具大大帮助了我减少 AI 检测率，使我的论文更加自然流畅。",
   },
   {
     name: "Emily",
     image: "/testimonials/user-2.jpeg",
-    title: "Student",
+    title: "国际学生",
     description:
-      "As a student, this app has been a lifesaver for organizing my tasks and schedules.",
+      "作为一名留学生，这款应用拯救了我，帮我快速翻译并检测内容，非常实用！",
   },
   {
     name: "David",
     image: "/testimonials/user-3.jpeg",
-    title: "Entrepreneur",
+    title: "研究生",
     description:
-      "The efficiency and reliability of this tool are unparalleled. Highly recommended!",
+      "工具的翻译功能非常精准，还能降低 AI 检测率，简直太方便了！推荐给所有同学！",
   },
   {
     name: "Sophia",
     image: "/testimonials/user-4.jpeg",
-    title: "Graphic Designer",
-    description: "Incredible features and user-friendly design. Love it!",
+    title: "海外学者",
+    description:
+      "功能强大且易于使用，特别适合留学生。它让我的写作更加轻松高效。",
   },
 ] as const;
+
 
 export const TOOLS = [
   {
@@ -84,14 +86,14 @@ export const TOOLS = [
 
 export const ROUTES = [
   {
-    label: "Dashboard",
+    label: "仪表盘",
     icon: LayoutDashboard,
     href: "/dashboard",
     color: "text-sky-500",
   },
   ...TOOLS,
   {
-    label: "Settings",
+    label: "设置",
     icon: Settings,
     href: "/settings",
     color: null,
@@ -99,24 +101,11 @@ export const ROUTES = [
 ] as const;
 
 export const FOOTER_LINKS = [
-  {
-    name: "Facebook",
-    icon: Facebook,
-    link: "https://facebook.com",
-  },
+
   {
     name: "Twitter",
     icon: Twitter,
     link: "https://twitter.com",
-  },
-  {
-    name: "Instagram",
-    icon: Instagram,
-    link: "https://instagram.com",
-  },
-  {
-    name: "Github",
-    icon: Github,
-    link: "https://github.com",
-  },
+  }
+
 ];
