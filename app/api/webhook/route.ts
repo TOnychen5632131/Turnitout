@@ -1,9 +1,8 @@
 import { headers } from "next/headers";
 import { type NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
-
-import { db } from "@/lib/db";
-import { stripe } from "@/lib/stripe";
+import { db } from "@/lib/db"; // 假设你有一个数据库配置
+import { stripe } from "@/lib/stripe"; // Stripe 实例
 
 export async function POST(req: NextRequest) {
   const body = await req.text();
@@ -33,17 +32,18 @@ export async function POST(req: NextRequest) {
     if (!session?.metadata?.userId)
       return new NextResponse("User id is required.", { status: 400 });
 
+    // 更新用户的订阅状态到 Clerk 的 publicMetadata
     await db.userSubscription.create({
       data: {
         userId: session?.metadata?.userId,
         stripeSubscriptionId: subscription.id,
         stripeCustomerId: subscription.customer as string,
         stripePriceId: subscription.items.data[0].price.id,
-        stripeCurrentPeriodEnd: new Date(
-          subscription.current_period_end * 1000,
-        ),
+        stripeCurrentPeriodEnd: new Date(subscription.current_period_end * 1000),
       },
     });
+
+    await updateUserPlan(session.metadata.userId, "pro"); // 将用户的计划更新为 "pro"
   }
 
   if (event.type === "invoice.payment_succeeded") {
@@ -57,12 +57,20 @@ export async function POST(req: NextRequest) {
       },
       data: {
         stripePriceId: subscription.items.data[0].price.id,
-        stripeCurrentPeriodEnd: new Date(
-          subscription.current_period_end * 1000,
-        ),
+        stripeCurrentPeriodEnd: new Date(subscription.current_period_end * 1000),
       },
     });
   }
 
   return new NextResponse(null, { status: 200 });
+}
+
+// Helper function to update user plan in Clerk
+async function updateUserPlan(userId: string, plan: string) {
+  const clerk = require("@clerk/clerk-sdk-node");
+  await clerk.users.updateUser(userId, {
+    publicMetadata: {
+      plan,
+    },
+  });
 }
