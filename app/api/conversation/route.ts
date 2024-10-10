@@ -16,12 +16,12 @@ export async function POST(req: Request) {
   try {
     const { userId } = auth();
     const body = await req.json();
-    const { messages = [{ role: "user", content: "我需要你把这段文字重新输出，英文语言水平为 B1..." }] } = body;
+    const { messages = [{ role: "user", content: "我需要你把这段文字重新输出，英文语言水平为 B1，但是字数不能下降，可以使用将一句话拆分为两句话，讲一个单词拆成一个短语等办法" }] } = body;
 
     // 插入 system 消息
     messages.unshift({
       role: "system",
-      content: "我需要你把这段文字重新输出，英文语言水平为 B1...",
+      content: "我需要你把这段文字重新输出，英文语言水平为 B1，但是字数不能下降，可以使用将一句话拆分为两句话，讲一个单词拆成一个短语等办法",
     });
 
     if (!userId) {
