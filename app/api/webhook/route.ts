@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
       signature,
       process.env.STRIPE_WEBHOOK_SECRET!,
     );
-    console.log('Webhook event:', event.type);  // 日志：Webhook 事件类型
+    console.log('Webhook event received:', event.type);  // 日志：Webhook 事件类型
   } catch (error: any) {
     console.error('Webhook Error:', error?.message);  // 错误日志
     return new NextResponse(`Webhook Error: ${error?.message}`, {
@@ -32,20 +32,19 @@ export async function POST(req: NextRequest) {
   if (event.type === "checkout.session.completed") {
     console.log('Handling checkout.session.completed');  // 日志
 
-    const subscription = await stripe.subscriptions.retrieve(
-      session.subscription as string,
-    );
-
-    console.log('Subscription retrieved:', subscription);  // 日志
-
-    // 检查是否有 userId
-    if (!session?.metadata?.userId) {
-      console.error('User ID not found in session metadata');  // 错误日志
-      return new NextResponse("User id is required.", { status: 400 });
-    }
-
-    // 创建用户订阅
     try {
+      const subscription = await stripe.subscriptions.retrieve(
+        session.subscription as string,
+      );
+      console.log('Subscription retrieved:', subscription);  // 日志
+
+      // 检查是否有 userId
+      if (!session?.metadata?.userId) {
+        console.error('User ID not found in session metadata');  // 错误日志
+        return new NextResponse("User id is required.", { status: 400 });
+      }
+
+      // 创建用户订阅
       await db.userSubscription.create({
         data: {
           userId: session.metadata.userId, // 从 metadata 获取 userId
@@ -65,17 +64,17 @@ export async function POST(req: NextRequest) {
   // 处理 invoice.payment_succeeded 事件
   if (event.type === "invoice.payment_succeeded") {
     console.log('Handling invoice.payment_succeeded');  // 日志
-    const invoice = event.data.object as Stripe.Invoice;
-
-    // 从 invoice.subscription 获取订阅 ID
-    const subscription = await stripe.subscriptions.retrieve(
-      invoice.subscription as string, // 使用 invoice.subscription
-    );
-
-    console.log('Subscription retrieved for invoice:', subscription.id);  // 日志
-
-    // 更新用户订阅
     try {
+      const invoice = event.data.object as Stripe.Invoice;
+
+      // 从 invoice.subscription 获取订阅 ID
+      const subscription = await stripe.subscriptions.retrieve(
+        invoice.subscription as string, // 使用 invoice.subscription
+      );
+
+      console.log('Subscription retrieved for invoice:', subscription.id);  // 日志
+
+      // 更新用户订阅
       await db.userSubscription.update({
         where: {
           stripeSubscriptionId: subscription.id,
