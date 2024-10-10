@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { ChatCompletionRequestMessage } from "openai"; 
+import { ChatCompletionRequestMessage } from "openai";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,6 +28,7 @@ const ConversationPage = () => {
   const proModal = useProModal();
   const [messages, setMessages] = useState<ExtendedChatCompletionRequestMessage[]>([]);
   const [isTranslating, setIsTranslating] = useState(false); // 控制翻译的状态
+
   const form = useForm<z.infer<typeof conversationFormSchema>>({
     resolver: zodResolver(conversationFormSchema),
     defaultValues: {
@@ -102,6 +103,7 @@ const ConversationPage = () => {
       <Heading
         title="降AI率"
         description="用魔法打败魔法🪄"
+        icon={MessageSquare} // 这里传递一个图标
       />
 
       <div className="px-4 lg:px-8">
