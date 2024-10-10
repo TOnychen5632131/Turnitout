@@ -18,7 +18,7 @@ import { BotAvatar } from "@/components/bot-avatar";
 import { UserAvatar } from "@/components/user-avatar";
 import { useProModal } from "@/hooks/use-pro-modal";
 
-// 表单模式，不限制字数但限制单词数
+// 没有强制字数限制模式
 const conversationFormSchema = z.object({
   prompt: z.string().min(1, { message: "请输入内容" }),
 });
@@ -31,9 +31,7 @@ const ConversationPage = () => {
   const proModal = useProModal();
   const [messages, setMessages] = useState<ExtendedChatCompletionRequestMessage[]>([]);
   const [isTranslating, setIsTranslating] = useState(false);
-  const [inputText, setInputText] = useState(""); // 用户输入的文本
-  const [wordCount, setWordCount] = useState(0); // 记录单词数
-  const maxWords = 50; // 限制最大单词数
+  const [inputText, setInputText] = useState(""); // 用于跟踪输入的文本
 
   const form = useForm<z.infer<typeof conversationFormSchema>>({
     resolver: zodResolver(conversationFormSchema),
@@ -44,17 +42,10 @@ const ConversationPage = () => {
 
   const isLoading = form.formState.isSubmitting;
 
-  // 处理文本框输入事件，计算单词数
+  // 处理输入事件
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const text = e.target.value;
-    setInputText(text);
-
-    // 计算单词数并更新状态
-    const words = text.trim().split(/\s+/).filter(Boolean);
-    setWordCount(words.length);
-
-    // 更新表单值
-    form.setValue('prompt', text);
+    setInputText(e.target.value);
+    form.setValue('prompt', e.target.value); // 更新 form 中的值
   };
 
   const onSubmit = async (values: z.infer<typeof conversationFormSchema>) => {
@@ -87,8 +78,6 @@ const ConversationPage = () => {
       console.error("[ERROR]: ", error);
     } finally {
       form.reset();
-      setInputText(""); // 清空输入框
-      setWordCount(0); // 重置单词数
     }
   };
 
@@ -115,6 +104,11 @@ const ConversationPage = () => {
     }
   };
 
+  // 分离文本：前 50 字符正常，超出的部分高亮
+  const maxLength = 50;
+  const normalText = inputText.slice(0, maxLength); // 正常显示的部分
+  const excessText = inputText.slice(maxLength); // 高亮显示的部分
+
   return (
     <div>
       <Heading
@@ -140,29 +134,27 @@ const ConversationPage = () => {
                         <textarea
                           rows={3}
                           disabled={isLoading}
-                          placeholder="将文章放入文本框，最多50个单词"
-                          value={inputText}
+                          placeholder="将文章放入文本框"
+                          value={field.value}
                           onChange={handleInputChange}
                           className="w-full p-2 border rounded-lg"
+                          style={{ opacity: 0, position: "absolute", zIndex: 1 }}
                         />
-                        <p className={`absolute right-2 bottom-2 text-sm ${wordCount > maxWords ? 'text-red-500' : ''}`}>
-                          {wordCount}/{maxWords} words
-                        </p>
+
+                        {/* 这里显示格式化后的文本 */}
+                        <div className="w-full p-2 border rounded-lg whitespace-pre-wrap">
+                          <span>{normalText}</span>
+                          <span className="bg-yellow-300">{excessText}</span>
+                        </div>
                       </div>
                     </FormControl>
-                    {/* 提示单词超限 */}
-                    {wordCount > maxWords && (
-                      <p className="text-red-500 text-sm">
-                        超过了 {wordCount - maxWords} 个单词，请删除部分内容。
-                      </p>
-                    )}
                   </FormItem>
                 )}
               />
 
               <Button
                 className="col-span-12 lg:col-span-2 w-full"
-                disabled={isLoading || wordCount > maxWords} // 超过 50 个单词时禁用按钮
+                disabled={isLoading}
                 type="submit"
               >
                 降低 AI 率
