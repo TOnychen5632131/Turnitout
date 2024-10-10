@@ -55,7 +55,7 @@ export async function POST(req: Request) {
       // 第二次请求：获取中文翻译
       const translationPrompt = `请将以下内容翻译成中文，原原本本的翻译："${originalMessage}"`;
       const translationResponse = await openai.createChatCompletion({
-        model: "gpt-4mini",
+        model: "gpt-4o-mini",
         messages: [{ role: "system", content: translationPrompt }],
       });
 
