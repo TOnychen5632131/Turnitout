@@ -31,6 +31,7 @@ const ConversationPage = () => {
   const proModal = useProModal();
   const router = useRouter();
   const [messages, setMessages] = useState<ExtendedChatCompletionRequestMessage[]>([]);
+  const [showTranslation, setShowTranslation] = useState<{ [key: number]: boolean }>({});
 
   const form = useForm<z.infer<typeof conversationFormSchema>>({
     resolver: zodResolver(conversationFormSchema),
@@ -58,12 +59,12 @@ const ConversationPage = () => {
       // 获取返回的原始和翻译内容
       const { originalMessage, translatedMessage } = response.data;
 
-      // 更新消息状态，包含原始内容和翻译
+      // 更新消息状态，包含原始内容和翻译（翻译内容默认不显示）
       setMessages((current) => [
         ...current,
         userMessage, // 用户输入
         { role: "assistant", content: originalMessage }, // GPT 生成的原始内容
-        { role: "assistant", content: translatedMessage, isTranslation: true }, // 中文翻译
+        { role: "assistant", content: translatedMessage, isTranslation: true }, // 中文翻译，默认不显示
       ]);
     } catch (error: any) {
       if (axios.isAxiosError(error) && error?.response?.status === 403) {
@@ -76,6 +77,14 @@ const ConversationPage = () => {
       form.reset();
       router.refresh();
     }
+  };
+
+  // 处理点击"显示翻译"按钮
+  const handleShowTranslation = (index: number) => {
+    setShowTranslation((prev) => ({
+      ...prev,
+      [index]: !prev[index], // 切换是否显示翻译
+    }));
   };
 
   return (
@@ -160,6 +169,21 @@ const ConversationPage = () => {
                           : 0
                       }`}
                     </p>
+                  )}
+                  {message.isTranslation && (
+                    <div>
+                      {/* 翻译按钮，点击后显示中文 */}
+                      <Button
+                        variant="link"
+                        onClick={() => handleShowTranslation(i)}
+                        className="text-sm text-blue-500"
+                      >
+                        {showTranslation[i] ? "隐藏翻译" : "显示翻译"}
+                      </Button>
+                      {showTranslation[i] && (
+                        <p className="text-sm text-right">{message.content}</p>
+                      )}
+                    </div>
                   )}
                 </div>
               </div>
