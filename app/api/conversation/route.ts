@@ -16,12 +16,12 @@ export async function POST(req: Request) {
   try {
     const { userId } = auth();
     const body = await req.json();
-    const { messages = [{ role: "user", content: "每一次回答后面加上 yes" }] } = body;
+    const { messages = [{ role: "user", content: "我需要你把这段文字重新输出，英文语言水平为 B1，但是字数不能下降，可以使用将一句话拆分为两句话，讲一个单词拆成一个短语等办法" }] } = body;
 
     // 插入 system 消息
     messages.unshift({
       role: "system",
-      content: "每次回答时，请在回答的最后加上 'yes'。",
+      content: "我需要你把这段文字重新输出，英文语言水平为 B1，但是字数不能下降，可以使用将一句话拆分为两句话，讲一个单词拆成一个短语等办法。",
     });
 
     if (!userId) return new NextResponse("Unauthorized.", { status: 401 });
@@ -38,7 +38,7 @@ export async function POST(req: Request) {
 
     // 第一次请求：获取原始的 GPT 生成内容
     const response = await openai.createChatCompletion({
-      model: "gpt-4",
+      model: "gpt-4o",
       messages,
     });
 
@@ -53,9 +53,9 @@ export async function POST(req: Request) {
       const originalMessage = response.data.choices[0].message.content;
 
       // 第二次请求：获取中文翻译
-      const translationPrompt = `请将以下内容翻译成中文："${originalMessage}"`;
+      const translationPrompt = `请将以下内容翻译成中文，原原本本的翻译："${originalMessage}"`;
       const translationResponse = await openai.createChatCompletion({
-        model: "gpt-4",
+        model: "gpt-4mini",
         messages: [{ role: "system", content: translationPrompt }],
       });
 
