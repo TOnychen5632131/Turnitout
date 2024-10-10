@@ -1,3 +1,5 @@
+"use client";  // 在文件顶部添加这一行
+
 import { useEffect, useState } from "react";
 import { Settings } from "lucide-react";
 import { Heading } from "@/components/heading";
@@ -33,7 +35,6 @@ const SettingsPage = () => {
             : "You are currently on a free plan."}
         </div>
 
-        {/* 显示订阅按钮 */}
         <SubscriptionButton isPro={isPro} />
       </div>
     </div>
