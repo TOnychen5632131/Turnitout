@@ -1,38 +1,33 @@
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
 import axios from "axios";
-import { MessageSquare } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { useForm } from "react-hook-form";
 import { toast } from "sonner";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { ChatCompletionRequestMessage } from "openai"; // 导入 ChatCompletionRequestMessage
+import { ChatCompletionRequestMessage } from "openai"; 
 
-import { BotAvatar } from "@/components/bot-avatar";
-import { Empty } from "@/components/empty";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
 import { Heading } from "@/components/heading";
 import { Loader } from "@/components/loader";
+import { Empty } from "@/components/empty";
+import { BotAvatar } from "@/components/bot-avatar";
 import { UserAvatar } from "@/components/user-avatar";
-import { Button } from "@/components/ui/button";
-import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { useProModal } from "@/hooks/use-pro-modal";
-import { cn } from "@/lib/utils";
 import { conversationFormSchema } from "@/schemas";
+import { useProModal } from "@/hooks/use-pro-modal";
 
-// 扩展 ChatCompletionRequestMessage 类型，增加 isTranslation 属性
+// 定义消息类型（包括是否为翻译的标志）
 interface ExtendedChatCompletionRequestMessage extends ChatCompletionRequestMessage {
   isTranslation?: boolean;
 }
 
 const ConversationPage = () => {
   const proModal = useProModal();
-  const router = useRouter();
   const [messages, setMessages] = useState<ExtendedChatCompletionRequestMessage[]>([]);
-  const [showTranslation, setShowTranslation] = useState<{ [key: number]: boolean }>({});
-
+  const [isTranslating, setIsTranslating] = useState(false); // 控制翻译的状态
   const form = useForm<z.infer<typeof conversationFormSchema>>({
     resolver: zodResolver(conversationFormSchema),
     defaultValues: {
@@ -42,6 +37,7 @@ const ConversationPage = () => {
 
   const isLoading = form.formState.isSubmitting;
 
+  // 处理生成英文内容的提交
   const onSubmit = async (values: z.infer<typeof conversationFormSchema>) => {
     try {
       const userMessage: ExtendedChatCompletionRequestMessage = {
@@ -51,40 +47,54 @@ const ConversationPage = () => {
 
       const newMessages = [...messages, userMessage];
 
-      // 调用后端 API 请求生成原始内容和中文翻译
+      // 调用后端 API 生成英文内容
       const response = await axios.post("/api/conversation", {
         messages: newMessages,
+        action: "generate",  // 表示生成英文内容
       });
 
-      // 获取返回的原始和翻译内容
-      const { originalMessage, translatedMessage } = response.data;
+      const { originalMessage } = response.data;
 
-      // 更新消息状态，包含原始内容和翻译（翻译内容默认不显示）
+      // 更新消息状态，添加生成的英文内容
       setMessages((current) => [
         ...current,
-        userMessage, // 用户输入
-        { role: "assistant", content: originalMessage }, // GPT 生成的原始内容
-        { role: "assistant", content: translatedMessage, isTranslation: true }, // 中文翻译，默认不显示
+        userMessage,  // 用户输入的内容
+        { role: "assistant", content: originalMessage },  // GPT 生成的英文内容
       ]);
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (axios.isAxiosError(error) && error?.response?.status === 403) {
         proModal.onOpen();
       } else {
         toast.error("Something went wrong.");
       }
-      console.error(error);
+      console.error("[ERROR]: ", error);
     } finally {
       form.reset();
-      router.refresh();
     }
   };
 
-  // 处理点击"显示翻译"按钮
-  const handleShowTranslation = (index: number) => {
-    setShowTranslation((prev) => ({
-      ...prev,
-      [index]: !prev[index], // 切换是否显示翻译
-    }));
+  // 处理翻译请求
+  const handleTranslate = async (originalMessage: string) => {
+    try {
+      setIsTranslating(true); // 标记翻译状态
+      const response = await axios.post("/api/conversation", {
+        originalMessage,  // 传递原始的英文内容
+        action: "translate",  // 表示翻译
+      });
+
+      const { translatedMessage } = response.data;
+
+      // 更新消息状态，添加中文翻译内容
+      setMessages((current) => [
+        ...current,
+        { role: "assistant", content: translatedMessage, isTranslation: true },  // 翻译后的中文内容
+      ]);
+    } catch (error: unknown) {
+      toast.error("Translation failed.");
+      console.error("[TRANSLATION_ERROR]: ", error);
+    } finally {
+      setIsTranslating(false); // 翻译完成后，取消翻译状态
+    }
   };
 
   return (
@@ -92,9 +102,6 @@ const ConversationPage = () => {
       <Heading
         title="降AI率"
         description="用魔法打败魔法🪄"
-        icon={MessageSquare}
-        iconColor="text-violet-500"
-        bgColor="bg-violet-500/10"
       />
 
       <div className="px-4 lg:px-8">
@@ -102,8 +109,6 @@ const ConversationPage = () => {
           <Form {...form}>
             <form
               onSubmit={form.handleSubmit(onSubmit)}
-              autoComplete="off"
-              autoCapitalize="off"
               className="rounded-lg border w-full p-4 px-3 md:px-6 focus-within:shadow-sm grid grid-cols-12 gap-2"
             >
               <FormField
@@ -112,9 +117,7 @@ const ConversationPage = () => {
                   <FormItem className="col-span-12 lg:col-span-10">
                     <FormControl className="m-0 p-0">
                       <Input
-                        className="border-0 outline-none focus-visible:ring-0 focus-visible:ring-transparent"
                         disabled={isLoading}
-                        aria-disabled={isLoading}
                         placeholder="将文章放入文本框"
                         {...field}
                       />
@@ -126,7 +129,7 @@ const ConversationPage = () => {
               <Button
                 className="col-span-12 lg:col-span-2 w-full"
                 disabled={isLoading}
-                aria-disabled={isLoading}
+                type="submit"
               >
                 降低 AI 率
               </Button>
@@ -140,49 +143,35 @@ const ConversationPage = () => {
               <Loader />
             </div>
           )}
+
           {messages.length === 0 && !isLoading && (
             <Empty label="没有发现降低AI率的文章" />
           )}
+
           <div className="flex flex-col-reverse gap-y-4">
             {messages.map((message, i) => (
               <div
                 key={`${i}-${message.content}`}
-                className={cn(
-                  "p-8 w-full flex items-start gap-x-8 rounded-lg",
+                className={`p-8 w-full flex items-start gap-x-8 rounded-lg ${
                   message.role === "user"
                     ? "bg-white border border-black/10"
                     : message.isTranslation
-                    ? "bg-gray-100 text-right" // 翻译内容右对齐显示
+                    ? "bg-gray-100 text-right"
                     : "bg-muted"
-                )}
+                }`}
               >
                 {message.role === "user" ? <UserAvatar /> : <BotAvatar />}
                 <div>
                   <p className="text-sm">{message.content}</p>
-                  {!message.isTranslation && (
-                    <p className="text-xs text-gray-500">
-                      {`Word count: ${
-                        message.content
-                          ? message.content
-                              .split(/[\s]+|(?=[\u4e00-\u9fa5])/)
-                              .filter(word => word.trim().length > 0).length
-                          : 0
-                      }`}
-                    </p>
-                  )}
-                  {message.isTranslation && (
-                    <div>
-                      {/* 翻译按钮，点击后显示中文 */}
+
+                  {message.role === "assistant" && !message.isTranslation && (
+                    <div className="mt-2">
                       <Button
-                        variant="link"
-                        onClick={() => handleShowTranslation(i)}
-                        className="text-sm text-blue-500"
+                        disabled={isTranslating}
+                        onClick={() => handleTranslate(message.content)}
                       >
-                        {showTranslation[i] ? "隐藏翻译" : "显示翻译"}
+                        {isTranslating ? "翻译中..." : "翻译为中文"}
                       </Button>
-                      {showTranslation[i] && (
-                        <p className="text-sm text-right">{message.content}</p>
-                      )}
                     </div>
                   )}
                 </div>

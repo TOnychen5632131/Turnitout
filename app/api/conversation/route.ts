@@ -16,18 +16,7 @@ export async function POST(req: Request) {
   try {
     const { userId } = auth();
     const body = await req.json();
-    const {
-      messages = [{
-        role: "user",
-        content: "我需要你把这段文字重新输出，英文语言水平为 B1，但是字数不能下降，可以使用将一句话拆分为两句话，讲一个单词拆成一个短语等办法",
-      }],
-    } = body;
-
-    // 插入系统消息
-    messages.unshift({
-      role: "system",
-      content: "我需要你把这段文字重新输出，英文语言水平为 B1，但是字数不能下降，可以使用将一句话拆分为两句话，讲一个单词拆成一个短语等办法",
-    });
+    const { messages, action } = body; // 根据前端传来的 action 判断是生成英文还是翻译
 
     if (!userId) {
       console.error("Unauthorized request, userId is missing");
@@ -53,32 +42,17 @@ export async function POST(req: Request) {
       return new NextResponse("Free trial has expired.", { status: 403 });
     }
 
-    // 第一次请求：获取 GPT 生成的英文内容
-    console.log("Sending request to OpenAI for original message...");
-    const response = await openai.createChatCompletion({
-      model: "gpt-4", // 确保你使用的是正确的模型
-      messages,
-    });
-
-    if (
-      response?.data?.choices?.[0]?.message?.content
-    ) {
-      const originalMessage = response.data.choices[0].message.content;
-      console.log("Received original message from OpenAI:", originalMessage);
-
-      // 第二次请求：获取中文翻译
-      const translationPrompt = `请将以下内容翻译成中文："${originalMessage}"`;
-      console.log("Sending request to OpenAI for translation...");
-      const translationResponse = await openai.createChatCompletion({
-        model: "gpt-4", // 使用相同或其他模型
-        messages: [{ role: "system", content: translationPrompt }],
+    if (action === "generate") {
+      // 第一次请求：获取 GPT 生成的英文内容
+      console.log("Sending request to OpenAI for original message...");
+      const response = await openai.createChatCompletion({
+        model: "gpt-4",
+        messages,
       });
 
-      if (
-        translationResponse?.data?.choices?.[0]?.message?.content
-      ) {
-        const translatedMessage = translationResponse.data.choices[0].message.content;
-        console.log("Received translated message from OpenAI:", translatedMessage);
+      if (response?.data?.choices?.[0]?.message?.content) {
+        const originalMessage = response.data.choices[0].message.content;
+        console.log("Received original message from OpenAI:", originalMessage);
 
         // 如果用户不是 Pro 用户，增加 API 调用限制计数
         if (!isPro) {
@@ -86,18 +60,42 @@ export async function POST(req: Request) {
           console.log("API limit increased for free trial user.");
         }
 
-        // 返回原始内容和翻译
-        return NextResponse.json(
-          { originalMessage, translatedMessage },
-          { status: 200 }
-        );
+        // 返回英文内容
+        return NextResponse.json({ originalMessage }, { status: 200 });
+      } else {
+        console.error("Invalid response data from OpenAI");
+        return new NextResponse("Invalid response from OpenAI", { status: 500 });
+      }
+    } else if (action === "translate") {
+      // 第二次请求：生成翻译
+      const { originalMessage } = body;
+
+      if (!originalMessage) {
+        console.error("No original message found in the request for translation");
+        return new NextResponse("Original message is required for translation.", { status: 400 });
+      }
+
+      // 生成翻译请求
+      const translationPrompt = `请将以下内容翻译成中文："${originalMessage}"`;
+      console.log("Sending request to OpenAI for translation...");
+      const translationResponse = await openai.createChatCompletion({
+        model: "gpt-4",
+        messages: [{ role: "system", content: translationPrompt }],
+      });
+
+      if (translationResponse?.data?.choices?.[0]?.message?.content) {
+        const translatedMessage = translationResponse.data.choices[0].message.content;
+        console.log("Received translated message from OpenAI:", translatedMessage);
+
+        // 返回翻译内容
+        return NextResponse.json({ translatedMessage }, { status: 200 });
       } else {
         console.error("Invalid translation response from OpenAI");
         return new NextResponse("Invalid translation response from OpenAI", { status: 500 });
       }
     } else {
-      console.error("Invalid response data from OpenAI");
-      return new NextResponse("Invalid response from OpenAI", { status: 500 });
+      console.error("Invalid action provided");
+      return new NextResponse("Invalid action.", { status: 400 });
     }
   } catch (error) {
     console.error("[CONVERSATION_ERROR]: ", error);
