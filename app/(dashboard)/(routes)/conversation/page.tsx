@@ -10,7 +10,6 @@ import { ChatCompletionRequestMessage } from "openai";
 import { MessageSquare } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
 import { Heading } from "@/components/heading";
 import { Loader } from "@/components/loader";
@@ -47,7 +46,7 @@ const ConversationPage = () => {
   const isLoading = form.formState.isSubmitting;
 
   // 处理输入事件，用于跟踪输入长度
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setTextLength(e.target.value.length);
     form.setValue('prompt', e.target.value); // 更新 form 中的值
   };
@@ -128,8 +127,7 @@ const ConversationPage = () => {
                   <FormItem className="col-span-12 lg:col-span-10">
                     <FormControl className="m-0 p-0">
                       <div className="relative">
-                        <Input
-                          as="textarea"  // 将输入框变为textarea
+                        <textarea
                           rows={3}  // 增加文本框的高度
                           disabled={isLoading}
                           placeholder="将文章放入文本框"
@@ -139,6 +137,7 @@ const ConversationPage = () => {
                           style={{
                             borderColor: textLength > 50 ? "red" : "", // 超过 50 字符时显示红色边框
                           }}
+                          className="w-full p-2 border rounded-lg"
                         />
                         <p className="absolute right-2 bottom-2 text-sm">
                           {textLength}/50
