@@ -81,6 +81,29 @@ const ConversationPage = () => {
     }
   };
 
+  // 处理翻译请求
+  const handleTranslate = async (originalMessage: string) => {
+    try {
+      setIsTranslating(true);
+      const response = await axios.post("/api/conversation", {
+        originalMessage,
+        action: "translate",
+      });
+
+      const { translatedMessage } = response.data;
+
+      setMessages((current) => [
+        ...current,
+        { role: "assistant", content: translatedMessage, isTranslation: true },
+      ]);
+    } catch (error: unknown) {
+      toast.error("Translation failed.");
+      console.error("[TRANSLATION_ERROR]: ", error);
+    } finally {
+      setIsTranslating(false);
+    }
+  };
+
   // 分离文本：前 50 字符正常，超出的部分高亮
   const maxLength = 50;
   const normalText = inputText.slice(0, maxLength); // 正常显示的部分
