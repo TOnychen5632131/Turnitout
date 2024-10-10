@@ -1,7 +1,8 @@
+// middleware.ts
 import { authMiddleware } from "@clerk/nextjs";
 
 export default authMiddleware({
-  publicRoutes: ["/", "/api/webhook", "/settings"], // 添加 /settings 到 publicRoutes
+  ignoredRoutes: ["/((?!api|trpc))(_next.*|.+\\.[\\w]+$)", "/api/stripe"], // 将 "/api/stripe" 添加到 ignoredRoutes，跳过 Clerk 验证
 });
 
 export const config = {
