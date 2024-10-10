@@ -18,12 +18,9 @@ import { BotAvatar } from "@/components/bot-avatar";
 import { UserAvatar } from "@/components/user-avatar";
 import { useProModal } from "@/hooks/use-pro-modal";
 
-// 字数限制模式：最大 50 个字符
+// 没有强制字数限制模式
 const conversationFormSchema = z.object({
-  prompt: z
-    .string()
-    .min(1, { message: "请输入内容" })
-    .max(50, { message: "最多只能输入 50 个字符" }),
+  prompt: z.string().min(1, { message: "请输入内容" }),
 });
 
 interface ExtendedChatCompletionRequestMessage extends ChatCompletionRequestMessage {
@@ -34,7 +31,7 @@ const ConversationPage = () => {
   const proModal = useProModal();
   const [messages, setMessages] = useState<ExtendedChatCompletionRequestMessage[]>([]);
   const [isTranslating, setIsTranslating] = useState(false);
-  const [textLength, setTextLength] = useState(0); // 用于跟踪输入的字符数
+  const [inputText, setInputText] = useState(""); // 用于跟踪输入的文本
 
   const form = useForm<z.infer<typeof conversationFormSchema>>({
     resolver: zodResolver(conversationFormSchema),
@@ -45,9 +42,9 @@ const ConversationPage = () => {
 
   const isLoading = form.formState.isSubmitting;
 
-  // 处理输入事件，用于跟踪输入长度
+  // 处理输入事件
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setTextLength(e.target.value.length);
+    setInputText(e.target.value);
     form.setValue('prompt', e.target.value); // 更新 form 中的值
   };
 
@@ -84,27 +81,10 @@ const ConversationPage = () => {
     }
   };
 
-  const handleTranslate = async (originalMessage: string) => {
-    try {
-      setIsTranslating(true);
-      const response = await axios.post("/api/conversation", {
-        originalMessage,
-        action: "translate",
-      });
-
-      const { translatedMessage } = response.data;
-
-      setMessages((current) => [
-        ...current,
-        { role: "assistant", content: translatedMessage, isTranslation: true },
-      ]);
-    } catch (error: unknown) {
-      toast.error("Translation failed.");
-      console.error("[TRANSLATION_ERROR]: ", error);
-    } finally {
-      setIsTranslating(false);
-    }
-  };
+  // 分离文本：前 50 字符正常，超出的部分高亮
+  const maxLength = 50;
+  const normalText = inputText.slice(0, maxLength); // 正常显示的部分
+  const excessText = inputText.slice(maxLength); // 高亮显示的部分
 
   return (
     <div>
@@ -127,29 +107,24 @@ const ConversationPage = () => {
                   <FormItem className="col-span-12 lg:col-span-10">
                     <FormControl className="m-0 p-0">
                       <div className="relative">
+                        {/* textarea 用户输入框 */}
                         <textarea
-                          rows={3}  // 增加文本框的高度
+                          rows={3}
                           disabled={isLoading}
                           placeholder="将文章放入文本框"
                           value={field.value}
-                          onChange={handleInputChange}  // 使用自定义的 handleInputChange
-                          maxLength={100}  // 限制输入最多100个字符
-                          style={{
-                            borderColor: textLength > 50 ? "red" : "", // 超过 50 字符时显示红色边框
-                          }}
+                          onChange={handleInputChange}
                           className="w-full p-2 border rounded-lg"
+                          style={{ opacity: 0, position: "absolute", zIndex: 1 }}
                         />
-                        <p className="absolute right-2 bottom-2 text-sm">
-                          {textLength}/50
-                        </p>
+
+                        {/* 这里显示格式化后的文本 */}
+                        <div className="w-full p-2 border rounded-lg whitespace-pre-wrap">
+                          <span>{normalText}</span>
+                          <span className="bg-yellow-300">{excessText}</span>
+                        </div>
                       </div>
                     </FormControl>
-                    {/* 超出部分显示红色 */}
-                    {textLength > 50 && (
-                      <p className="text-red-500 text-sm">
-                        超过了 {textLength - 50} 个字符，请减少输入。
-                      </p>
-                    )}
                   </FormItem>
                 )}
               />
