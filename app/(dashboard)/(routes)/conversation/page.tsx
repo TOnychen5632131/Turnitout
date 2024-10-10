@@ -171,11 +171,12 @@ const ConversationPage = () => {
                     <div className="mt-2">
                       <Button
                         disabled={isTranslating}
-                        onClick={() => handleTranslate(message.content)}
+                        onClick={() => message.content ? handleTranslate(message.content) : null}  // 仅在 message.content 存在时调用 handleTranslate
                       >
                         {isTranslating ? "翻译中..." : "翻译为中文"}
                       </Button>
                     </div>
+
                   )}
                 </div>
               </div>
