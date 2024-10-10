@@ -8,6 +8,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import * as z from "zod";
+import { ChatCompletionRequestMessage } from "openai"; // 导入 ChatCompletionRequestMessage
 
 import { BotAvatar } from "@/components/bot-avatar";
 import { Empty } from "@/components/empty";
