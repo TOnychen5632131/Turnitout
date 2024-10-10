@@ -6,11 +6,13 @@ import { db } from "@/lib/db";
 import { stripe } from "@/lib/stripe";
 
 export async function POST(req: NextRequest) {
+  console.log("Webhook received");  // 日志：Webhook 请求已收到
   const body = await req.text();
   const signature = headers().get("Stripe-Signature") as string;
 
   let event: Stripe.Event;
 
+  // 验证并构建事件对象
   try {
     event = stripe.webhooks.constructEvent(
       body,
@@ -27,6 +29,7 @@ export async function POST(req: NextRequest) {
 
   // 确保我们可以正确解析事件对象
   const session = event.data.object as Stripe.Checkout.Session;
+  console.log("Session object parsed successfully"); // 日志：Session 解析成功
 
   // 处理 checkout.session.completed 事件
   if (event.type === "checkout.session.completed") {
@@ -36,7 +39,7 @@ export async function POST(req: NextRequest) {
       const subscription = await stripe.subscriptions.retrieve(
         session.subscription as string,
       );
-      console.log('Subscription retrieved:', subscription);  // 日志
+      console.log('Subscription retrieved:', subscription.id);  // 日志：订阅已检索
 
       // 检查是否有 userId
       if (!session?.metadata?.userId) {
@@ -91,5 +94,6 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  console.log('Webhook handled successfully');  // 最后日志：处理完成
   return new NextResponse(null, { status: 200 });
 }
