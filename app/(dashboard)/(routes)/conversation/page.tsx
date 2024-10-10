@@ -10,6 +10,7 @@ import { ChatCompletionRequestMessage } from "openai";
 import { MessageSquare } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
 import { Heading } from "@/components/heading";
 import { Loader } from "@/components/loader";
@@ -34,7 +35,7 @@ const ConversationPage = () => {
   const proModal = useProModal();
   const [messages, setMessages] = useState<ExtendedChatCompletionRequestMessage[]>([]);
   const [isTranslating, setIsTranslating] = useState(false);
-  const [inputValue, setInputValue] = useState(""); // 追踪输入值
+  const [textLength, setTextLength] = useState(0); // 用于跟踪输入的字符数
 
   const form = useForm<z.infer<typeof conversationFormSchema>>({
     resolver: zodResolver(conversationFormSchema),
@@ -44,6 +45,12 @@ const ConversationPage = () => {
   });
 
   const isLoading = form.formState.isSubmitting;
+
+  // 处理输入事件，用于跟踪输入长度
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setTextLength(e.target.value.length);
+    form.setValue('prompt', e.target.value); // 更新 form 中的值
+  };
 
   const onSubmit = async (values: z.infer<typeof conversationFormSchema>) => {
     try {
@@ -75,7 +82,6 @@ const ConversationPage = () => {
       console.error("[ERROR]: ", error);
     } finally {
       form.reset();
-      setInputValue(""); // 重置输入框
     }
   };
 
@@ -101,11 +107,6 @@ const ConversationPage = () => {
     }
   };
 
-  // 处理文本输入并标记超出部分
-  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setInputValue(e.target.value);
-  };
-
   return (
     <div>
       <Heading
@@ -127,34 +128,36 @@ const ConversationPage = () => {
                   <FormItem className="col-span-12 lg:col-span-10">
                     <FormControl className="m-0 p-0">
                       <div className="relative">
-                        <textarea
+                        <Input
+                          as="textarea"  // 将输入框变为textarea
+                          rows={3}  // 增加文本框的高度
                           disabled={isLoading}
                           placeholder="将文章放入文本框"
-                          maxLength={100} // 设置输入框的最大字符数量（非强制限制）
-                          value={inputValue}
-                          onChange={handleInputChange}
-                          rows={5} // 增加文本框高度
-                          className="w-full rounded-md border border-gray-300 p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          value={field.value}
+                          onChange={handleInputChange}  // 使用自定义的 handleInputChange
+                          maxLength={100}  // 限制输入最多100个字符
+                          style={{
+                            borderColor: textLength > 50 ? "red" : "", // 超过 50 字符时显示红色边框
+                          }}
                         />
-                        {/* 超出字符数限制时显示 */}
-                        <div className="text-right text-sm text-gray-500">
-                          {inputValue.length}/50
-                        </div>
-                      </div>
-                      {/* 显示超出字符的部分 */}
-                      {inputValue.length > 50 && (
-                        <p className="text-red-500 mt-2">
-                          超出{inputValue.length - 50}个字符，请删除多余的字符。
+                        <p className="absolute right-2 bottom-2 text-sm">
+                          {textLength}/50
                         </p>
-                      )}
+                      </div>
                     </FormControl>
+                    {/* 超出部分显示红色 */}
+                    {textLength > 50 && (
+                      <p className="text-red-500 text-sm">
+                        超过了 {textLength - 50} 个字符，请减少输入。
+                      </p>
+                    )}
                   </FormItem>
                 )}
               />
 
               <Button
                 className="col-span-12 lg:col-span-2 w-full"
-                disabled={isLoading || inputValue.length > 50} // 禁用按钮，直到字符数符合要求
+                disabled={isLoading}
                 type="submit"
               >
                 降低 AI 率
