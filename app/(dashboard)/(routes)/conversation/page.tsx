@@ -18,7 +18,7 @@ import { BotAvatar } from "@/components/bot-avatar";
 import { UserAvatar } from "@/components/user-avatar";
 import { useProModal } from "@/hooks/use-pro-modal";
 
-// 表单模式
+// 表单模式，不限制字数但限制单词数
 const conversationFormSchema = z.object({
   prompt: z.string().min(1, { message: "请输入内容" }),
 });
@@ -57,6 +57,7 @@ const ConversationPage = () => {
     form.setValue('prompt', text);
   };
 
+  // 处理生成英文内容的提交
   const onSubmit = async (values: z.infer<typeof conversationFormSchema>) => {
     try {
       const userMessage: ExtendedChatCompletionRequestMessage = {
@@ -68,7 +69,7 @@ const ConversationPage = () => {
 
       const response = await axios.post("/api/conversation", {
         messages: newMessages,
-        action: "generate",  // 第一次请求：生成英文
+        action: "generate",  // 生成英文内容
       });
 
       const { originalMessage } = response.data;
@@ -84,6 +85,7 @@ const ConversationPage = () => {
       } else {
         toast.error("Something went wrong.");
       }
+      console.error("[ERROR]: ", error);
     } finally {
       form.reset();
       setInputText(""); // 清空输入框
@@ -96,8 +98,8 @@ const ConversationPage = () => {
     try {
       setIsTranslating(true);
       const response = await axios.post("/api/conversation", {
-        originalMessage,  // 传递原始英文
-        action: "translate",  // 第二次请求：翻译
+        originalMessage,  // 传递生成的英文内容
+        action: "translate",  // 翻译为中文
       });
 
       const { translatedMessage } = response.data;
@@ -108,6 +110,7 @@ const ConversationPage = () => {
       ]);
     } catch (error: unknown) {
       toast.error("Translation failed.");
+      console.error("[TRANSLATION_ERROR]: ", error);
     } finally {
       setIsTranslating(false);
     }
@@ -134,6 +137,7 @@ const ConversationPage = () => {
                   <FormItem className="col-span-12 lg:col-span-10">
                     <FormControl className="m-0 p-0">
                       <div className="relative">
+                        {/* textarea 用户输入框 */}
                         <textarea
                           rows={3}
                           disabled={isLoading}
@@ -147,6 +151,7 @@ const ConversationPage = () => {
                         </p>
                       </div>
                     </FormControl>
+                    {/* 提示单词超限 */}
                     {wordCount > maxWords && (
                       <p className="text-red-500 text-sm">
                         超过了 {wordCount - maxWords} 个单词，请删除部分内容。
@@ -158,7 +163,7 @@ const ConversationPage = () => {
 
               <Button
                 className="col-span-12 lg:col-span-2 w-full"
-                disabled={isLoading || wordCount > maxWords} 
+                disabled={isLoading || wordCount > maxWords} // 超过 50 个单词时禁用按钮
                 type="submit"
               >
                 降低 AI 率
@@ -198,7 +203,7 @@ const ConversationPage = () => {
                     <div className="mt-2">
                       <Button
                         disabled={isTranslating}
-                        onClick={() => handleTranslate(message.content)}
+                        onClick={() => message.content ? handleTranslate(message.content) : null}
                       >
                         {isTranslating ? "翻译中..." : "翻译为中文"}
                       </Button>
