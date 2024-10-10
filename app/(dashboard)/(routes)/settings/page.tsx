@@ -1,11 +1,20 @@
+import { useEffect, useState } from "react";
 import { Settings } from "lucide-react";
 import { Heading } from "@/components/heading";
 import { SubscriptionButton } from "@/components/subscription-button";
 import { checkSubscription } from "@/lib/subscription";
 
-const SettingsPage = async () => {
-  // 检查用户订阅状态
-  const isPro = await checkSubscription();
+const SettingsPage = () => {
+  const [isPro, setIsPro] = useState(false);
+
+  useEffect(() => {
+    const fetchSubscription = async () => {
+      const proStatus = await checkSubscription();
+      setIsPro(proStatus);
+    };
+
+    fetchSubscription();
+  }, []);
 
   return (
     <div>
