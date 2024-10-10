@@ -7,6 +7,9 @@ import { checkSubscription } from "@/lib/subscription";
 const SettingsPage = async () => {
   const isPro = await checkSubscription();
 
+  // 在这里记录调试信息
+  console.log('Is Pro:', isPro);
+
   return (
     <div>
       <Heading
