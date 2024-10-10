@@ -23,43 +23,49 @@ export async function POST(req: NextRequest) {
     });
   }
 
+  // 确保我们可以正确解析事件对象
   const session = event.data.object as Stripe.Checkout.Session;
 
+  // 处理 checkout.session.completed 事件
   if (event.type === "checkout.session.completed") {
     const subscription = await stripe.subscriptions.retrieve(
       session.subscription as string,
     );
 
-    if (!session?.metadata?.userId)
+    // 检查是否有 userId
+    if (!session?.metadata?.userId) {
       return new NextResponse("User id is required.", { status: 400 });
+    }
 
+    // 创建用户订阅
     await db.userSubscription.create({
       data: {
-        userId: session?.metadata?.userId,
+        userId: session.metadata.userId, // 从 metadata 获取 userId
         stripeSubscriptionId: subscription.id,
         stripeCustomerId: subscription.customer as string,
         stripePriceId: subscription.items.data[0].price.id,
-        stripeCurrentPeriodEnd: new Date(
-          subscription.current_period_end * 1000,
-        ),
+        stripeCurrentPeriodEnd: new Date(subscription.current_period_end * 1000),
       },
     });
   }
 
+  // 处理 invoice.payment_succeeded 事件
   if (event.type === "invoice.payment_succeeded") {
+    const invoice = event.data.object as Stripe.Invoice;
+
+    // 从 invoice.subscription 获取订阅 ID
     const subscription = await stripe.subscriptions.retrieve(
-      session.subscription as string,
+      invoice.subscription as string, // 使用 invoice.subscription
     );
 
+    // 更新用户订阅
     await db.userSubscription.update({
       where: {
         stripeSubscriptionId: subscription.id,
       },
       data: {
         stripePriceId: subscription.items.data[0].price.id,
-        stripeCurrentPeriodEnd: new Date(
-          subscription.current_period_end * 1000,
-        ),
+        stripeCurrentPeriodEnd: new Date(subscription.current_period_end * 1000),
       },
     });
   }
