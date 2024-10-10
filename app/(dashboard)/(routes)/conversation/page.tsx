@@ -4,7 +4,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import axios from "axios";
 import { MessageSquare } from "lucide-react";
 import { useRouter } from "next/navigation";
-import type { ChatCompletionRequestMessage } from "openai";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -150,7 +149,6 @@ const ConversationPage = () => {
                 {message.role === "user" ? <UserAvatar /> : <BotAvatar />}
                 <div>
                   <p className="text-sm">{message.content}</p>
-                  {/* 显示单词计数器，处理中英文混合文本 */}
                   {!message.isTranslation && (
                     <p className="text-xs text-gray-500">
                       {`Word count: ${
