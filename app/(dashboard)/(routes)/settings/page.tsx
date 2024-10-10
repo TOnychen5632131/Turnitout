@@ -1,22 +1,11 @@
-"use client";  // 在文件顶部添加这一行
-
-import { useEffect, useState } from "react";
 import { Settings } from "lucide-react";
+
 import { Heading } from "@/components/heading";
 import { SubscriptionButton } from "@/components/subscription-button";
 import { checkSubscription } from "@/lib/subscription";
 
-const SettingsPage = () => {
-  const [isPro, setIsPro] = useState(false);
-
-  useEffect(() => {
-    const fetchSubscription = async () => {
-      const proStatus = await checkSubscription();
-      setIsPro(proStatus);
-    };
-
-    fetchSubscription();
-  }, []);
+const SettingsPage = async () => {
+  const isPro = await checkSubscription();
 
   return (
     <div>
