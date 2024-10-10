@@ -35,15 +35,6 @@ export const LandingNavbar = () => {
           <Link href={isSignedIn ? "/dashboard" : "/sign-up"}>开始使用</Link>
         </Button>
 
-        <Button className="rounded-full" asChild>
-          <Link
-            href={links.sourceCode}
-            target="_blank"
-            rel="noreferrer noopener"
-          >
-            <Github className="h-5 w-5" />
-          </Link>
-        </Button>
       </div>
     </nav>
   );

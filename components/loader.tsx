@@ -7,7 +7,7 @@ export const Loader = () => {
         <Image src="/logo.png" alt="logo" fill />
       </div>
 
-      <p className="text-sm text-muted-foreground">Genius is thinking...</p>
+      <p className="text-sm text-muted-foreground">AI 率正在渐渐降低</p>
     </div>
   );
 };
