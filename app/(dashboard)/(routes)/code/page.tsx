@@ -120,7 +120,7 @@ const CodePage = () => {
     <div>
       <Heading
         title="Ai率检测"
-        description="Generate code using descriptive text."
+        description="检测一下是否AI可以查出是修改后的"
         icon={Code}
         iconColor="text-green-700"
         bgColor="bg-green-700/10"
