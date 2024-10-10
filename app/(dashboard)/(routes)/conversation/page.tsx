@@ -7,20 +7,25 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { ChatCompletionRequestMessage } from "openai";
-import { MessageSquare } from "lucide-react"; // 确保导入 MessageSquare 图标
+import { MessageSquare } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
 import { Heading } from "@/components/heading";
 import { Loader } from "@/components/loader";
 import { Empty } from "@/components/empty";
 import { BotAvatar } from "@/components/bot-avatar";
 import { UserAvatar } from "@/components/user-avatar";
-import { conversationFormSchema } from "@/schemas";
 import { useProModal } from "@/hooks/use-pro-modal";
 
-// 定义消息类型（包括是否为翻译的标志）
+// 字数限制模式：最大 50 个字符
+const conversationFormSchema = z.object({
+  prompt: z
+    .string()
+    .min(1, { message: "请输入内容" })
+    .max(50, { message: "最多只能输入 50 个字符" }),
+});
+
 interface ExtendedChatCompletionRequestMessage extends ChatCompletionRequestMessage {
   isTranslation?: boolean;
 }
@@ -28,7 +33,8 @@ interface ExtendedChatCompletionRequestMessage extends ChatCompletionRequestMess
 const ConversationPage = () => {
   const proModal = useProModal();
   const [messages, setMessages] = useState<ExtendedChatCompletionRequestMessage[]>([]);
-  const [isTranslating, setIsTranslating] = useState(false); // 控制翻译的状态
+  const [isTranslating, setIsTranslating] = useState(false);
+  const [inputValue, setInputValue] = useState(""); // 追踪输入值
 
   const form = useForm<z.infer<typeof conversationFormSchema>>({
     resolver: zodResolver(conversationFormSchema),
@@ -39,7 +45,6 @@ const ConversationPage = () => {
 
   const isLoading = form.formState.isSubmitting;
 
-  // 处理生成英文内容的提交
   const onSubmit = async (values: z.infer<typeof conversationFormSchema>) => {
     try {
       const userMessage: ExtendedChatCompletionRequestMessage = {
@@ -49,19 +54,17 @@ const ConversationPage = () => {
 
       const newMessages = [...messages, userMessage];
 
-      // 调用后端 API 生成英文内容
       const response = await axios.post("/api/conversation", {
         messages: newMessages,
-        action: "generate",  // 表示生成英文内容
+        action: "generate",
       });
 
       const { originalMessage } = response.data;
 
-      // 更新消息状态，添加生成的英文内容
       setMessages((current) => [
         ...current,
-        userMessage,  // 用户输入的内容
-        { role: "assistant", content: originalMessage },  // GPT 生成的英文内容
+        userMessage,
+        { role: "assistant", content: originalMessage },
       ]);
     } catch (error: unknown) {
       if (axios.isAxiosError(error) && error?.response?.status === 403) {
@@ -72,31 +75,35 @@ const ConversationPage = () => {
       console.error("[ERROR]: ", error);
     } finally {
       form.reset();
+      setInputValue(""); // 重置输入框
     }
   };
 
-  // 处理翻译请求
   const handleTranslate = async (originalMessage: string) => {
     try {
-      setIsTranslating(true); // 标记翻译状态
+      setIsTranslating(true);
       const response = await axios.post("/api/conversation", {
-        originalMessage,  // 传递原始的英文内容
-        action: "translate",  // 表示翻译
+        originalMessage,
+        action: "translate",
       });
 
       const { translatedMessage } = response.data;
 
-      // 更新消息状态，添加中文翻译内容
       setMessages((current) => [
         ...current,
-        { role: "assistant", content: translatedMessage, isTranslation: true },  // 翻译后的中文内容
+        { role: "assistant", content: translatedMessage, isTranslation: true },
       ]);
     } catch (error: unknown) {
       toast.error("Translation failed.");
       console.error("[TRANSLATION_ERROR]: ", error);
     } finally {
-      setIsTranslating(false); // 翻译完成后，取消翻译状态
+      setIsTranslating(false);
     }
+  };
+
+  // 处理文本输入并标记超出部分
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInputValue(e.target.value);
   };
 
   return (
@@ -104,7 +111,7 @@ const ConversationPage = () => {
       <Heading
         title="降AI率"
         description="用魔法打败魔法🪄"
-        icon={MessageSquare} // 这里传递一个图标
+        icon={MessageSquare}
       />
 
       <div className="px-4 lg:px-8">
@@ -119,11 +126,27 @@ const ConversationPage = () => {
                 render={({ field }) => (
                   <FormItem className="col-span-12 lg:col-span-10">
                     <FormControl className="m-0 p-0">
-                      <Input
-                        disabled={isLoading}
-                        placeholder="将文章放入文本框"
-                        {...field}
-                      />
+                      <div className="relative">
+                        <textarea
+                          disabled={isLoading}
+                          placeholder="将文章放入文本框"
+                          maxLength={100} // 设置输入框的最大字符数量（非强制限制）
+                          value={inputValue}
+                          onChange={handleInputChange}
+                          rows={5} // 增加文本框高度
+                          className="w-full rounded-md border border-gray-300 p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                        {/* 超出字符数限制时显示 */}
+                        <div className="text-right text-sm text-gray-500">
+                          {inputValue.length}/50
+                        </div>
+                      </div>
+                      {/* 显示超出字符的部分 */}
+                      {inputValue.length > 50 && (
+                        <p className="text-red-500 mt-2">
+                          超出{inputValue.length - 50}个字符，请删除多余的字符。
+                        </p>
+                      )}
                     </FormControl>
                   </FormItem>
                 )}
@@ -131,7 +154,7 @@ const ConversationPage = () => {
 
               <Button
                 className="col-span-12 lg:col-span-2 w-full"
-                disabled={isLoading}
+                disabled={isLoading || inputValue.length > 50} // 禁用按钮，直到字符数符合要求
                 type="submit"
               >
                 降低 AI 率
@@ -171,12 +194,11 @@ const ConversationPage = () => {
                     <div className="mt-2">
                       <Button
                         disabled={isTranslating}
-                        onClick={() => message.content ? handleTranslate(message.content) : null}  // 仅在 message.content 存在时调用 handleTranslate
+                        onClick={() => message.content ? handleTranslate(message.content) : null}
                       >
                         {isTranslating ? "翻译中..." : "翻译为中文"}
                       </Button>
                     </div>
-
                   )}
                 </div>
               </div>
